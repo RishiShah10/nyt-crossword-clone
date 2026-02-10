@@ -1,0 +1,253 @@
+/* Grid Container */
+.gridContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: #ffffff;
+}
+
+/* Desktop Layout Adjustments */
+@media (min-width: 1200px) {
+  .gridContainer {
+    flex-shrink: 0;
+    padding: 0;
+    align-items: flex-start;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 0;
+  border: 3px solid #000000;
+  width: fit-content;
+  background: #000000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.gridLoading {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 1.3rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Cell Styles */
+.cell {
+  position: relative;
+  width: 45px;
+  height: 45px;
+  box-sizing: border-box;
+}
+
+.cellBlack {
+  background: #000000;
+}
+
+.cellWhite {
+  background: #ffffff;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid #000000;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.cellWhite:hover {
+  background: #f5f5f5;
+}
+
+/* Selected and Highlighted States */
+.cellSelected {
+  background: #ffeb3b !important;
+  box-shadow: inset 0 0 0 3px #fbc02d;
+  z-index: 1;
+}
+
+.cellHighlighted {
+  background: #d3e5f7;
+}
+
+.cellHighlighted.cellSelected {
+  background: #ffeb3b !important;
+}
+
+/* Incorrect Cell */
+.cellIncorrect {
+  background: #ffcdd2 !important;
+}
+
+.cellIncorrectMark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cellIncorrectMark::before,
+.cellIncorrectMark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 70%;
+  height: 2px;
+  background: #d32f2f;
+}
+
+.cellIncorrectMark::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.cellIncorrectMark::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* Circled and Shaded */
+.cellCircled {
+  border-radius: 50%;
+}
+
+.cellShaded {
+  background: #e8e8e8;
+}
+
+/* Cell Number */
+.cellNumber {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 1;
+  color: #000000;
+  font-family: Arial, sans-serif;
+}
+
+/* Cell Input */
+.cellInput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  text-transform: uppercase;
+  outline: none;
+  caret-color: transparent;
+  padding: 0;
+  color: #000000;
+  cursor: pointer;
+}
+
+.cellInput:focus {
+  outline: none;
+  cursor: text;
+}
+
+/* Focus visible for keyboard navigation */
+.cellInput:focus-visible {
+  outline: 3px solid #4a90e2;
+  outline-offset: -3px;
+  z-index: 2;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+  .gridContainer {
+    padding: 15px;
+  }
+
+  .cell {
+    width: 40px;
+    height: 40px;
+  }
+
+  .cellInput {
+    font-size: 22px;
+  }
+
+  .cellNumber {
+    font-size: 10px;
+    top: 2px;
+    left: 2px;
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+  .gridContainer {
+    padding: 10px;
+  }
+
+  .cell {
+    width: 36px;
+    height: 36px;
+  }
+
+  .cellInput {
+    font-size: 20px;
+  }
+
+  .cellNumber {
+    font-size: 9px;
+    top: 1px;
+    left: 2px;
+  }
+
+  .grid {
+    border: 2px solid #000000;
+  }
+}
+
+/* Responsive - Small Mobile */
+@media (max-width: 480px) {
+  .gridContainer {
+    padding: 5px;
+  }
+
+  .cell {
+    width: 28px;
+    height: 28px;
+  }
+
+  .cellInput {
+    font-size: 16px;
+  }
+
+  .cellNumber {
+    font-size: 7px;
+    top: 1px;
+    left: 1px;
+  }
+
+  .cellSelected {
+    box-shadow: inset 0 0 0 2px #fbc02d;
+  }
+}
+
+/* Extra Small Screens */
+@media (max-width: 380px) {
+  .cell {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cellInput {
+    font-size: 14px;
+  }
+
+  .cellNumber {
+    font-size: 6px;
+  }
+}

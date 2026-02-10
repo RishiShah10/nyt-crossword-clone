@@ -1,0 +1,226 @@
+/* Clues Container */
+.cluesContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  padding: 0 20px 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Desktop Layout Adjustments */
+@media (min-width: 1200px) {
+  .cluesContainer {
+    flex: 1;
+    padding: 0;
+    max-width: 800px;
+  }
+}
+
+.cluesLoading {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 1.3rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Clues Section */
+.cluesSection {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cluesHeading {
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: #f8f8f8;
+  border-bottom: 2px solid #e0e0e0;
+  color: #000000;
+  letter-spacing: 0.5px;
+}
+
+/* Clues List */
+.cluesList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  max-height: 550px;
+  scrollbar-width: thin;
+  scrollbar-color: #c0c0c0 #f5f5f5;
+}
+
+.cluesList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cluesList::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.cluesList::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.cluesList::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+/* Clue Item */
+.clueItem {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  align-items: flex-start;
+  outline: none;
+}
+
+.clueItem:last-child {
+  border-bottom: none;
+}
+
+.clueItem:hover {
+  background: #f9f9f9;
+}
+
+.clueItem:focus-visible {
+  outline: 2px solid #4a90e2;
+  outline-offset: -2px;
+}
+
+.clueItemActive {
+  background: #d3e5f7;
+  font-weight: 600;
+  border-left: 4px solid #4a90e2;
+  padding-left: 16px;
+}
+
+.clueItemActive:hover {
+  background: #c1daf4;
+}
+
+.clueNumber {
+  font-weight: 700;
+  color: #000000;
+  min-width: 32px;
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.clueText {
+  color: #222222;
+  line-height: 1.6;
+  font-size: 1rem;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.clueItemActive .clueText {
+  color: #000000;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+  .cluesContainer {
+    gap: 20px;
+    padding: 0 15px 25px;
+  }
+
+  .cluesList {
+    max-height: 450px;
+  }
+
+  .cluesHeading {
+    font-size: 1.3rem;
+    padding: 14px 18px;
+  }
+
+  .clueItem {
+    padding: 12px 18px;
+  }
+}
+
+/* Responsive - Mobile (Stack vertically) */
+@media (max-width: 768px) {
+  .cluesContainer {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 0 15px 25px;
+  }
+
+  .cluesList {
+    max-height: 350px;
+  }
+
+  .clueItem {
+    padding: 12px 16px;
+  }
+
+  .cluesHeading {
+    padding: 14px 16px;
+    font-size: 1.25rem;
+  }
+
+  .clueNumber {
+    min-width: 28px;
+    font-size: 0.95rem;
+  }
+
+  .clueText {
+    font-size: 0.95rem;
+  }
+}
+
+/* Responsive - Small Mobile */
+@media (max-width: 480px) {
+  .cluesContainer {
+    gap: 15px;
+    padding: 0 10px 20px;
+  }
+
+  .cluesSection {
+    border: 1px solid #e0e0e0;
+  }
+
+  .cluesList {
+    max-height: 280px;
+  }
+
+  .clueItem {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .cluesHeading {
+    padding: 12px 14px;
+    font-size: 1.15rem;
+  }
+
+  .clueNumber {
+    min-width: 26px;
+    font-size: 0.9rem;
+  }
+
+  .clueText {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .clueItemActive {
+    border-left: 3px solid #4a90e2;
+    padding-left: 11px;
+  }
+}

@@ -1,0 +1,15 @@
+import React from 'react';
+import { useTimer } from '../../hooks/useTimer';
+
+const Timer: React.FC = () => {
+  const { formattedTime } = useTimer();
+
+  return (
+    <div className="timer" role="timer" aria-label={`Elapsed time: ${formattedTime}`}>
+      <span className="timer-icon" aria-hidden="true">⏱</span>
+      <span className="timer-value">{formattedTime}</span>
+    </div>
+  );
+};
+
+export default Timer;
