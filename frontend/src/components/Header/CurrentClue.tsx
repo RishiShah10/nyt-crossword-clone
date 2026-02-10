@@ -24,12 +24,15 @@ const CurrentClue: React.FC = () => {
     return null;
   }
 
+  // Remove leading number and period from clue text if present
+  const clueText = clueInfo.clue.replace(/^\d+\.\s*/, '');
+
   return (
     <div className="current-clue">
       <span className="current-clue-label">
         {clueInfo.number}. {direction === 'across' ? 'Across' : 'Down'}
       </span>
-      <span className="current-clue-text">{clueInfo.clue}</span>
+      <span className="current-clue-text">{clueText}</span>
     </div>
   );
 };
