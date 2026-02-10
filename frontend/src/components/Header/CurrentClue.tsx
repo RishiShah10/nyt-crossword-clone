@@ -27,7 +27,7 @@ const CurrentClue: React.FC = () => {
   return (
     <div className="current-clue">
       <span className="current-clue-label">
-        {clueInfo.number} {direction === 'across' ? 'Across' : 'Down'}:
+        {clueInfo.number}. {direction === 'across' ? 'Across' : 'Down'}
       </span>
       <span className="current-clue-text">{clueInfo.clue}</span>
     </div>
