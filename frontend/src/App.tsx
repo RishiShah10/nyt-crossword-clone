@@ -5,6 +5,7 @@ import Grid from './components/Grid/Grid';
 import ClueList from './components/Clues/ClueList';
 import Timer from './components/Header/Timer';
 import ActionButtons from './components/Header/ActionButtons';
+import CurrentClue from './components/Header/CurrentClue';
 import './App.css';
 
 function App() {
@@ -75,6 +76,8 @@ function App() {
       </header>
 
       <ActionButtons />
+
+      <CurrentClue />
 
       <main className="app-main">
         <Grid />

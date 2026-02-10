@@ -199,6 +199,33 @@
   }
 }
 
+/* Current Clue Display */
+.current-clue {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 20px 40px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #e0e0e0;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.current-clue-label {
+  font-weight: 700;
+  color: #000000;
+  font-size: 1.1rem;
+  white-space: nowrap;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.current-clue-text {
+  color: #333333;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  font-family: 'Open Sans', sans-serif;
+}
+
 /* Main Content */
 .app-main {
   display: flex;
@@ -309,6 +336,15 @@
     font-size: 0.95rem;
   }
 
+  .current-clue {
+    padding: 18px 30px;
+  }
+
+  .current-clue-label,
+  .current-clue-text {
+    font-size: 1.05rem;
+  }
+
   .app-main {
     gap: 35px;
     padding: 30px 30px 45px;
@@ -348,6 +384,18 @@
   .btn {
     padding: 9px 18px;
     font-size: 0.9rem;
+  }
+
+  .current-clue {
+    padding: 15px 20px;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+
+  .current-clue-label,
+  .current-clue-text {
+    font-size: 1rem;
   }
 
   .app-main {
