@@ -6,9 +6,11 @@ interface ClueItemProps {
   clue: ClueInfo;
   isActive: boolean;
   onClick: () => void;
+  onArrowUp?: () => void;
+  onArrowDown?: () => void;
 }
 
-const ClueItem: React.FC<ClueItemProps> = ({ clue, isActive, onClick }) => {
+const ClueItem: React.FC<ClueItemProps> = ({ clue, isActive, onClick, onArrowUp, onArrowDown }) => {
   const itemRef = useRef<HTMLLIElement>(null);
 
   // Auto-scroll into view when active
@@ -20,6 +22,19 @@ const ClueItem: React.FC<ClueItemProps> = ({ clue, isActive, onClick }) => {
       });
     }
   }, [isActive]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    } else if (e.key === 'ArrowUp' && onArrowUp) {
+      e.preventDefault();
+      onArrowUp();
+    } else if (e.key === 'ArrowDown' && onArrowDown) {
+      e.preventDefault();
+      onArrowDown();
+    }
+  };
 
   const clueClasses = [styles.clueItem, isActive && styles.clueItemActive]
     .filter(Boolean)
@@ -34,12 +49,7 @@ const ClueItem: React.FC<ClueItemProps> = ({ clue, isActive, onClick }) => {
       tabIndex={0}
       aria-label={`Clue ${clue.number}: ${clue.clue}`}
       aria-pressed={isActive}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
+      onKeyDown={handleKeyDown}
     >
       <span className={styles.clueNumber} aria-hidden="true">{clue.number}.</span>
       <span className={styles.clueText}>{clue.clue}</span>

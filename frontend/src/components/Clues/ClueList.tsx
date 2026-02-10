@@ -42,12 +42,20 @@ const ClueList: React.FC = () => {
     dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
   };
 
+  // Navigate to previous/next clue in a list
+  const handleNavigateClue = (clues: typeof acrossClues, currentIndex: number, delta: number) => {
+    const newIndex = currentIndex + delta;
+    if (newIndex >= 0 && newIndex < clues.length) {
+      handleClueClick(clues[newIndex]);
+    }
+  };
+
   return (
     <div className={styles.cluesContainer}>
       <section className={styles.cluesSection} aria-label="Across clues">
         <h3 className={styles.cluesHeading}>Across</h3>
         <ul className={styles.cluesList} role="list">
-          {acrossClues.map(clue => {
+          {acrossClues.map((clue, index) => {
             const clueKey = `${clue.number}-across`;
             const isActive = clueKey === activeClueKey;
 
@@ -57,6 +65,8 @@ const ClueList: React.FC = () => {
                 clue={clue}
                 isActive={isActive}
                 onClick={() => handleClueClick(clue)}
+                onArrowUp={() => handleNavigateClue(acrossClues, index, -1)}
+                onArrowDown={() => handleNavigateClue(acrossClues, index, 1)}
               />
             );
           })}
@@ -66,7 +76,7 @@ const ClueList: React.FC = () => {
       <section className={styles.cluesSection} aria-label="Down clues">
         <h3 className={styles.cluesHeading}>Down</h3>
         <ul className={styles.cluesList} role="list">
-          {downClues.map(clue => {
+          {downClues.map((clue, index) => {
             const clueKey = `${clue.number}-down`;
             const isActive = clueKey === activeClueKey;
 
@@ -76,6 +86,8 @@ const ClueList: React.FC = () => {
                 clue={clue}
                 isActive={isActive}
                 onClick={() => handleClueClick(clue)}
+                onArrowUp={() => handleNavigateClue(downClues, index, -1)}
+                onArrowDown={() => handleNavigateClue(downClues, index, 1)}
               />
             );
           })}
