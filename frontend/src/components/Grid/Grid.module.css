@@ -37,8 +37,8 @@
 /* Cell Styles */
 .cell {
   position: relative;
-  width: 55px;
-  height: 55px;
+  width: 48px;
+  height: 48px;
   box-sizing: border-box;
 }
 
