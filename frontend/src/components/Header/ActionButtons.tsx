@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePuzzle } from '../../context/PuzzleContext';
 import { validatePuzzle, revealAllAnswers, getCorrectLetter } from '../../utils/validationUtils';
+import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
 
 const ActionButtons: React.FC = () => {
   const { state, dispatch } = usePuzzle();
@@ -53,6 +54,43 @@ const ActionButtons: React.FC = () => {
       type: 'CHECK_CELL',
       payload: { row, col, isCorrect: true },
     });
+  };
+
+  const handleRevealWord = () => {
+    if (!state.selection || !state.grid || !state.clueMap) {
+      alert('Please select a cell first.');
+      return;
+    }
+
+    const { row, col, direction } = state.selection;
+
+    // Get the clue key for the current word
+    const clueKey = getClueKeyForCell(state.grid, row, col, direction, state.clueMap);
+
+    if (!clueKey) {
+      alert('No word found at current position.');
+      return;
+    }
+
+    // Get all cells in the current word
+    const cells = getCellsForClue(clueKey, state.clueMap);
+
+    // Reveal all letters in the word
+    cells.forEach(cell => {
+      const correctLetter = getCorrectLetter(state.puzzle!, cell.row, cell.col);
+      dispatch({
+        type: 'SET_CELL_VALUE',
+        payload: { row: cell.row, col: cell.col, value: correctLetter },
+      });
+
+      // Clear any incorrect marking
+      dispatch({
+        type: 'CHECK_CELL',
+        payload: { row: cell.row, col: cell.col, isCorrect: true },
+      });
+    });
+
+    alert(`Word revealed! (${cells.length} letters)`);
   };
 
   const handleRevealPuzzle = () => {
@@ -109,6 +147,15 @@ const ActionButtons: React.FC = () => {
         aria-label="Reveal current cell answer"
       >
         💡 Reveal Cell
+      </button>
+
+      <button
+        className="btn btn-reveal"
+        onClick={handleRevealWord}
+        title="Reveal current word"
+        aria-label="Reveal current word answer"
+      >
+        📝 Reveal Word
       </button>
 
       <button
