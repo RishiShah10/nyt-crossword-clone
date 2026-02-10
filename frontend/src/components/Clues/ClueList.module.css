@@ -2,10 +2,10 @@
 .cluesContainer {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 25px;
-  padding: 0 20px 30px;
+  gap: 40px;
+  padding: 0;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0;
   width: 100%;
 }
 
@@ -14,7 +14,7 @@
   .cluesContainer {
     flex: 1;
     padding: 0;
-    max-width: 800px;
+    max-width: none;
   }
 }
 
@@ -38,15 +38,16 @@
 }
 
 .cluesHeading {
-  margin: 0;
-  padding: 12px 0 8px;
-  font-size: 1.1rem;
+  margin: 0 0 12px 0;
+  padding: 0;
+  font-size: 1rem;
   font-weight: 700;
   background: transparent;
   border-bottom: none;
   color: #000000;
-  letter-spacing: 0;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Clues List */
@@ -80,15 +81,15 @@
 /* Clue Item */
 .clueItem {
   display: flex;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 8px 0;
   border-bottom: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.1s ease;
   align-items: flex-start;
   outline: none;
-  border-radius: 2px;
-  margin-bottom: 2px;
+  border-radius: 0;
+  margin-bottom: 0;
 }
 
 .clueItem:last-child {
@@ -96,7 +97,7 @@
 }
 
 .clueItem:hover {
-  background: #f5f5f5;
+  background: transparent;
 }
 
 .clueItem:focus-visible {
@@ -106,9 +107,12 @@
 
 .clueItemActive {
   background: #A7D8F0;
-  font-weight: 500;
+  font-weight: 400;
   border-left: none;
-  padding-left: 12px;
+  padding-left: 0;
+  padding-right: 8px;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 
 .clueItemActive:hover {
@@ -118,17 +122,23 @@
 .clueNumber {
   font-weight: 700;
   color: #000000;
-  min-width: 24px;
+  min-width: 20px;
   flex-shrink: 0;
   font-size: 0.95rem;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  padding-left: 0;
+}
+
+.clueItemActive .clueNumber {
+  padding-left: 8px;
 }
 
 .clueText {
-  color: #333333;
-  line-height: 1.5;
+  color: #000000;
+  line-height: 1.6;
   font-size: 0.95rem;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
 }
 
 .clueItemActive .clueText {

@@ -6,8 +6,8 @@ const Timer: React.FC = () => {
 
   return (
     <div className="timer" role="timer" aria-label={`Elapsed time: ${formattedTime}`}>
-      <span className="timer-icon" aria-hidden="true">⏱</span>
       <span className="timer-value">{formattedTime}</span>
+      <span className="timer-icon" aria-hidden="true">⏸</span>
     </div>
   );
 };

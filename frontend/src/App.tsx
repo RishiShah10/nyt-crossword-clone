@@ -65,14 +65,13 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <h1>NYT Crossword Clone</h1>
-          <Timer />
+          <h1>The Mini Crossword</h1>
+          {puzzle.date && <h2>{puzzle.date}</h2>}
         </div>
-        {puzzle.title && <h2>{puzzle.title}</h2>}
         <div className="puzzle-meta">
           {puzzle.author && <span className="author">By {puzzle.author}</span>}
-          {puzzle.date && <span className="date">{puzzle.date}</span>}
         </div>
+        <Timer />
       </header>
 
       <ActionButtons />

@@ -5,53 +5,57 @@
   padding: 0;
   min-height: 100vh;
   background-color: #ffffff;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Header */
 .app-header {
-  text-align: center;
-  padding: 20px 20px 15px;
-  border-bottom: 1px solid #e8e8e8;
+  text-align: left;
+  padding: 30px 40px 20px;
+  border-bottom: 1px solid #e0e0e0;
   background: #ffffff;
 }
 
 .header-content {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 900px;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 15px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: #000000;
   letter-spacing: -0.5px;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Libre Baskerville', Georgia, serif;
 }
 
 .app-header h2 {
-  margin: 8px 0 0;
-  font-size: 1.1rem;
+  margin: 0;
+  font-size: 1.5rem;
   font-weight: 400;
-  color: #666666;
+  color: #000000;
   letter-spacing: 0;
+  font-family: 'Libre Baskerville', Georgia, serif;
 }
 
 .puzzle-meta {
   display: flex;
-  gap: 18px;
-  justify-content: center;
+  gap: 0;
+  justify-content: flex-start;
   margin-top: 8px;
   flex-wrap: wrap;
+  max-width: 1400px;
+  margin: 8px auto 0;
 }
 
 .puzzle-meta .author,
 .puzzle-meta .date {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #666666;
   font-weight: 400;
 }
@@ -60,19 +64,23 @@
 .timer {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 1rem;
+  justify-content: center;
+  gap: 8px;
+  font-size: 1.1rem;
   font-weight: 400;
   color: #000000;
   background: transparent;
-  padding: 0;
+  padding: 15px 0;
   border-radius: 0;
   border: none;
   box-shadow: none;
+  margin: 0 auto;
+  max-width: 1400px;
 }
 
 .timer-icon {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
+  color: #666666;
 }
 
 .timer-value {
@@ -84,38 +92,40 @@
 .action-buttons {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  padding: 15px 20px;
+  gap: 12px;
+  padding: 0 40px 25px;
   flex-wrap: wrap;
   background: transparent;
   border-bottom: none;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .btn {
-  padding: 8px 16px;
-  font-size: 0.9rem;
+  padding: 10px 20px;
+  font-size: 0.95rem;
   font-weight: 500;
-  border: 1px solid #d0d0d0;
-  border-radius: 3px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
   background: #ffffff;
   color: #000000;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   letter-spacing: 0;
 }
 
 .btn:hover {
-  background: #f5f5f5;
-  border-color: #a0a0a0;
+  background: #f7f7f7;
+  border-color: #999999;
   transform: none;
-  box-shadow: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .btn:active {
   transform: none;
-  box-shadow: none;
-  background: #e8e8e8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: #eeeeee;
 }
 
 .btn-check {
@@ -193,10 +203,11 @@
 .app-main {
   display: flex;
   flex-direction: column;
-  gap: 35px;
-  padding-top: 30px;
+  gap: 40px;
+  padding: 35px 40px 50px;
   background: #ffffff;
-  padding-bottom: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* Desktop Layout - Side by side grid and clues */
@@ -204,10 +215,8 @@
   .app-main {
     flex-direction: row;
     align-items: flex-start;
-    padding: 30px 40px 40px;
-    gap: 40px;
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 35px 40px 50px;
+    gap: 60px;
   }
 }
 
@@ -279,11 +288,11 @@
   }
 
   .app-header {
-    padding: 18px 20px 22px;
+    padding: 25px 30px 18px;
   }
 
   .app-header h1 {
-    font-size: 2rem;
+    font-size: 2.2rem;
   }
 
   .app-header h2 {
@@ -291,7 +300,7 @@
   }
 
   .action-buttons {
-    padding: 20px 15px;
+    padding: 0 30px 20px;
     gap: 10px;
   }
 
@@ -301,37 +310,38 @@
   }
 
   .app-main {
-    gap: 30px;
-    padding-top: 25px;
+    gap: 35px;
+    padding: 30px 30px 45px;
   }
 }
 
 /* Responsive - Mobile */
 @media (max-width: 768px) {
   .app-header {
-    padding: 15px 15px 20px;
+    padding: 20px 20px 15px;
   }
 
   .header-content {
     flex-direction: column;
-    gap: 12px;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .app-header h1 {
-    font-size: 1.7rem;
+    font-size: 1.8rem;
   }
 
   .app-header h2 {
-    font-size: 1.15rem;
+    font-size: 1.2rem;
   }
 
   .timer {
-    font-size: 1.1rem;
-    padding: 8px 16px;
+    font-size: 1.05rem;
+    padding: 12px 0;
   }
 
   .action-buttons {
-    padding: 18px 12px;
+    padding: 0 20px 18px;
     gap: 8px;
   }
 
@@ -341,8 +351,8 @@
   }
 
   .app-main {
-    gap: 25px;
-    padding-top: 20px;
+    gap: 30px;
+    padding: 25px 20px 40px;
   }
 
   .completion-banner {
