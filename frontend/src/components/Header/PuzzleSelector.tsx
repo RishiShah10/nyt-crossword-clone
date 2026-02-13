@@ -93,28 +93,30 @@ const PuzzleSelector: React.FC = () => {
 
   return (
     <div className={styles.puzzleSelector} role="region" aria-label="Puzzle selection">
-      <label htmlFor="puzzle-date" className={styles.label}>
-        📅 Select Date:
-      </label>
-      <input
-        id="puzzle-date"
-        type="date"
-        className={styles.dateInput}
-        value={selectedDate}
-        onChange={handleDateChange}
-        min={MIN_DATE}
-        max={MAX_DATE}
-        disabled={isLoading}
-        aria-label="Select puzzle date"
-      />
-      <button
-        className={styles.randomBtn}
-        onClick={handleRandomPuzzle}
-        disabled={isLoading}
-        aria-label="Load random puzzle"
-      >
-        {isLoading ? 'Loading...' : '🎲 Random Puzzle'}
-      </button>
+      <div className={styles.selectorGroup}>
+        <div className={styles.dateWrapper}>
+          <span className={styles.dateIcon}>📅</span>
+          <input
+            id="puzzle-date"
+            type="date"
+            className={styles.dateInput}
+            value={selectedDate}
+            onChange={handleDateChange}
+            min={MIN_DATE}
+            max={MAX_DATE}
+            disabled={isLoading}
+            aria-label="Select puzzle date"
+          />
+        </div>
+        <button
+          className={styles.randomBtn}
+          onClick={handleRandomPuzzle}
+          disabled={isLoading}
+          aria-label="Load random puzzle"
+        >
+          {isLoading ? '⏳ Loading...' : '🎲 Random'}
+        </button>
+      </div>
     </div>
   );
 };
