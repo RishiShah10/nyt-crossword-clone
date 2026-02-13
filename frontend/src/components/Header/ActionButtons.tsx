@@ -169,6 +169,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary }) => {
     }
   };
 
+  const handleTogglePause = () => {
+    dispatch({ type: 'TOGGLE_PAUSE' });
+  };
+
   return (
     <div className="action-buttons" role="toolbar" aria-label="Puzzle actions">
       <button
@@ -242,6 +246,15 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary }) => {
         aria-label="Save puzzle progress"
       >
         {showSaved ? '✓ Saved!' : '💾 Save'}
+      </button>
+
+      <button
+        className={`btn btn-pause ${state.isPaused ? 'btn-paused' : ''}`}
+        onClick={handleTogglePause}
+        title={state.isPaused ? 'Resume timer' : 'Pause timer'}
+        aria-label={state.isPaused ? 'Resume timer' : 'Pause timer'}
+      >
+        {state.isPaused ? '▶️ Resume' : '⏸️ Pause'}
       </button>
 
       {onOpenLibrary && (

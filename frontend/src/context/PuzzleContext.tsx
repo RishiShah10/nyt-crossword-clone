@@ -17,6 +17,7 @@ interface PuzzleState {
   checkedCells: Map<string, boolean>;  // "row,col" -> isCorrect
   elapsedSeconds: number;
   isComplete: boolean;
+  isPaused: boolean;
   isLoading: boolean;
   error: string | null;
 }
@@ -33,6 +34,7 @@ type PuzzleAction =
   | { type: 'SET_COMPLETE'; payload: boolean }
   | { type: 'INCREMENT_TIMER' }
   | { type: 'RESET_TIMER' }
+  | { type: 'TOGGLE_PAUSE' }
   | { type: 'CLEAR_GRID' }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null };
@@ -64,6 +66,7 @@ const initialState: PuzzleState = {
   checkedCells: new Map(),
   elapsedSeconds: 0,
   isComplete: false,
+  isPaused: false,
   isLoading: false,
   error: null,
 };
@@ -164,7 +167,8 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         );
       }
 
-      return { ...state, userGrid: newUserGrid };
+      // Auto-resume timer when typing
+      return { ...state, userGrid: newUserGrid, isPaused: false };
     }
 
     case 'SET_SELECTION': {
@@ -277,6 +281,10 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
       return { ...state, elapsedSeconds: 0 };
     }
 
+    case 'TOGGLE_PAUSE': {
+      return { ...state, isPaused: !state.isPaused };
+    }
+
     case 'CLEAR_GRID': {
       // Delete the save from SavesManager
       if (state.puzzleId) {
@@ -322,14 +330,14 @@ export function PuzzleProvider({ children }: { children: ReactNode }) {
 
   // Timer effect
   useEffect(() => {
-    if (state.puzzle && !state.isComplete) {
+    if (state.puzzle && !state.isComplete && !state.isPaused) {
       const timer = setInterval(() => {
         dispatch({ type: 'INCREMENT_TIMER' });
       }, 1000);
 
       return () => clearInterval(timer);
     }
-  }, [state.puzzle, state.isComplete]);
+  }, [state.puzzle, state.isComplete, state.isPaused]);
 
   return (
     <PuzzleContext.Provider value={{ state, dispatch }}>
