@@ -13,8 +13,8 @@ export function buildGrid(puzzle: Puzzle): Cell[][] {
       const index = row * cols + col;
       const letter = puzzle.grid[index];
       const number = puzzle.gridnums[index] || null;
-      const isCircled = puzzle.circles?.includes(index) || false;
-      const isShaded = puzzle.shades?.includes(index) || false;
+      const isCircled = false; // Disable circles for now
+      const isShaded = false; // Disable shading for now
 
       rowCells.push({
         letter,
