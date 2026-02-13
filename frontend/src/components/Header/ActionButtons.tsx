@@ -1,11 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePuzzle } from '../../context/PuzzleContext';
 import { validatePuzzle, revealAllAnswers, getCorrectLetter } from '../../utils/validationUtils';
 import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
+import SavesManager from '../../utils/savesManager';
 
-const ActionButtons: React.FC = () => {
+interface ActionButtonsProps {
+  onOpenLibrary?: () => void;
+}
+
+const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary }) => {
   const { state, dispatch } = usePuzzle();
   const [showConfirm, setShowConfirm] = useState<'reveal' | null>(null);
+  const [showSaved, setShowSaved] = useState(false);
+  const [showRevealMenu, setShowRevealMenu] = useState(false);
+  const revealMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close reveal menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (revealMenuRef.current && !revealMenuRef.current.contains(event.target as Node)) {
+        setShowRevealMenu(false);
+      }
+    };
+
+    if (showRevealMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showRevealMenu]);
 
   if (!state.puzzle) return null;
 
@@ -129,6 +154,21 @@ const ActionButtons: React.FC = () => {
     dispatch({ type: 'CLEAR_CHECKS' });
   };
 
+  const handleSave = () => {
+    if (state.puzzleId && state.puzzle) {
+      SavesManager.savePuzzleProgress(
+        state.puzzleId,
+        state.userGrid,
+        state.checkedCells,
+        state.elapsedSeconds,
+        state.isComplete,
+        state.puzzle
+      );
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 2000);
+    }
+  };
+
   return (
     <div className="action-buttons" role="toolbar" aria-label="Puzzle actions">
       <button
@@ -140,32 +180,49 @@ const ActionButtons: React.FC = () => {
         ✓ Check
       </button>
 
-      <button
-        className="btn btn-reveal"
-        onClick={handleRevealCell}
-        title="Reveal current cell"
-        aria-label="Reveal current cell answer"
-      >
-        💡 Reveal Cell
-      </button>
-
-      <button
-        className="btn btn-reveal"
-        onClick={handleRevealWord}
-        title="Reveal current word"
-        aria-label="Reveal current word answer"
-      >
-        📝 Reveal Word
-      </button>
-
-      <button
-        className={`btn btn-reveal-all ${showConfirm === 'reveal' ? 'btn-confirm' : ''}`}
-        onClick={handleRevealPuzzle}
-        title="Reveal entire puzzle"
-        aria-label={showConfirm === 'reveal' ? 'Confirm reveal entire puzzle' : 'Reveal entire puzzle'}
-      >
-        {showConfirm === 'reveal' ? 'Confirm?' : '🔓 Reveal Puzzle'}
-      </button>
+      <div className="reveal-dropdown" ref={revealMenuRef}>
+        <button
+          className="btn btn-reveal"
+          onClick={() => setShowRevealMenu(!showRevealMenu)}
+          title="Reveal options"
+          aria-label="Reveal options menu"
+        >
+          💡 Reveal ▾
+        </button>
+        {showRevealMenu && (
+          <div className="reveal-menu">
+            <button
+              className="reveal-menu-item"
+              onClick={() => {
+                handleRevealCell();
+                setShowRevealMenu(false);
+              }}
+            >
+              💡 Reveal Cell
+            </button>
+            <button
+              className="reveal-menu-item"
+              onClick={() => {
+                handleRevealWord();
+                setShowRevealMenu(false);
+              }}
+            >
+              📝 Reveal Word
+            </button>
+            <button
+              className={`reveal-menu-item ${showConfirm === 'reveal' ? 'reveal-confirm' : ''}`}
+              onClick={() => {
+                handleRevealPuzzle();
+                if (showConfirm !== 'reveal') {
+                  setShowRevealMenu(false);
+                }
+              }}
+            >
+              {showConfirm === 'reveal' ? '⚠️ Confirm?' : '🔓 Reveal Puzzle'}
+            </button>
+          </div>
+        )}
+      </div>
 
       {state.checkedCells.size > 0 && (
         <button
@@ -175,6 +232,26 @@ const ActionButtons: React.FC = () => {
           aria-label="Clear incorrect cell marks"
         >
           Clear Marks
+        </button>
+      )}
+
+      <button
+        className={`btn btn-save ${showSaved ? 'btn-saved' : ''}`}
+        onClick={handleSave}
+        title="Save puzzle progress"
+        aria-label="Save puzzle progress"
+      >
+        {showSaved ? '✓ Saved!' : '💾 Save'}
+      </button>
+
+      {onOpenLibrary && (
+        <button
+          className="btn btn-library"
+          onClick={onOpenLibrary}
+          title="Open puzzle library"
+          aria-label="Open puzzle library"
+        >
+          📚 Library
         </button>
       )}
 

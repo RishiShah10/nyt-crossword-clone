@@ -139,6 +139,12 @@
   border-color: #a0a0a0;
 }
 
+/* Reveal Dropdown */
+.reveal-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
 .btn-reveal {
   background: #ffffff;
   color: #000000;
@@ -150,22 +156,80 @@
   border-color: #a0a0a0;
 }
 
-.btn-reveal-all {
-  background: #ffffff;
-  color: #000000;
-  border-color: #d0d0d0;
+.reveal-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  animation: slideDown 0.2s ease-out;
+  overflow: hidden;
 }
 
-.btn-reveal-all:hover {
-  background: #f5f5f5;
-  border-color: #a0a0a0;
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.btn-confirm {
-  background: #d32f2f;
-  color: white;
-  border-color: #d32f2f;
-  animation: pulse 1s ease-in-out;
+.reveal-menu-item {
+  padding: 12px 18px;
+  border: none;
+  background: white;
+  color: #333;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  border-left: 3px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reveal-menu-item:hover {
+  background: #f8f9fa;
+  border-left-color: #2196f3;
+  padding-left: 22px;
+}
+
+.reveal-menu-item + .reveal-menu-item {
+  border-top: 1px solid #f0f0f0;
+}
+
+.reveal-menu-item.reveal-confirm {
+  background: #fff3e0;
+  color: #d32f2f;
+  border-left-color: #d32f2f;
+  font-weight: 600;
+  animation: pulseGlow 1s ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    background: #fff3e0;
+  }
+  50% {
+    background: #ffe0b2;
+  }
+}
+
+.reveal-menu-item.reveal-confirm:hover {
+  background: #ffe0b2;
 }
 
 .btn-clear {
@@ -175,6 +239,35 @@
 }
 
 .btn-clear:hover {
+  background: #f5f5f5;
+  border-color: #a0a0a0;
+}
+
+.btn-save {
+  background: #ffffff;
+  color: #000000;
+  border-color: #d0d0d0;
+  transition: all 0.3s ease;
+}
+
+.btn-save:hover {
+  background: #f5f5f5;
+  border-color: #a0a0a0;
+}
+
+.btn-saved {
+  background: #4caf50;
+  color: white;
+  border-color: #4caf50;
+}
+
+.btn-library {
+  background: #ffffff;
+  color: #000000;
+  border-color: #d0d0d0;
+}
+
+.btn-library:hover {
   background: #f5f5f5;
   border-color: #a0a0a0;
 }

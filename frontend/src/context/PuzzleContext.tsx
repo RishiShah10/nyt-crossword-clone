@@ -2,6 +2,8 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Puzzle, Cell, ClueInfo, Selection } from '../types/puzzle';
 import { buildGrid, buildClueMap } from '../utils/gridUtils';
+import SavesManager from '../utils/savesManager';
+import { throttle } from '../utils/debounce';
 
 // State interface
 interface PuzzleState {
@@ -35,6 +37,21 @@ type PuzzleAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null };
 
+// Throttled save for timer updates (every 10 seconds)
+const throttledTimerSave = throttle(
+  (
+    puzzleId: string,
+    userGrid: Map<string, string>,
+    checkedCells: Map<string, boolean>,
+    elapsedSeconds: number,
+    isComplete: boolean,
+    puzzle: Puzzle
+  ) => {
+    SavesManager.savePuzzleProgress(puzzleId, userGrid, checkedCells, elapsedSeconds, isComplete, puzzle);
+  },
+  10000 // 10 seconds
+);
+
 // Initial state
 const initialState: PuzzleState = {
   puzzle: null,
@@ -59,13 +76,37 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
       const grid = buildGrid(puzzle);
       const clueMap = buildClueMap(puzzle);
 
-      // Load saved user grid from localStorage
-      const savedUserGrid = localStorage.getItem(`puzzle-${puzzleId}`);
-      const userGrid = savedUserGrid ? new Map(JSON.parse(savedUserGrid)) : new Map();
+      let userGrid = new Map<string, string>();
+      let checkedCells = new Map<string, boolean>();
+      let elapsedSeconds = 0;
+      let isComplete = false;
 
-      // Load saved time
-      const savedTime = localStorage.getItem(`puzzle-time-${puzzleId}`);
-      const elapsedSeconds = savedTime ? parseInt(savedTime, 10) : 0;
+      try {
+        // Try loading from new format
+        const saveData = SavesManager.loadPuzzleProgress(puzzleId);
+
+        if (saveData) {
+          userGrid = new Map(saveData.userGrid);
+          checkedCells = new Map(saveData.checkedCells);
+          elapsedSeconds = saveData.elapsedSeconds;
+          isComplete = saveData.isComplete;
+        } else {
+          // Try migrating from old format
+          const migrated = SavesManager.migrateOldSaveWithPuzzle(puzzleId, puzzle);
+          if (migrated) {
+            const migratedData = SavesManager.loadPuzzleProgress(puzzleId);
+            if (migratedData) {
+              userGrid = new Map(migratedData.userGrid);
+              checkedCells = new Map(migratedData.checkedCells);
+              elapsedSeconds = migratedData.elapsedSeconds;
+              isComplete = migratedData.isComplete;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading puzzle progress:', error);
+        // Start fresh on error
+      }
 
       // Auto-select first cell (0,0) with across direction
       const firstClue = Array.from(clueMap.values()).find(c => c.direction === 'across');
@@ -90,7 +131,9 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         grid,
         clueMap,
         userGrid,
+        checkedCells,
         elapsedSeconds,
+        isComplete,
         selection: initialSelection,
         highlightedCells: initialHighlighted,
         isLoading: false,
@@ -109,11 +152,15 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         newUserGrid.set(key, value.toUpperCase());
       }
 
-      // Save to localStorage
-      if (state.puzzleId) {
-        localStorage.setItem(
-          `puzzle-${state.puzzleId}`,
-          JSON.stringify(Array.from(newUserGrid.entries()))
+      // Debounced save to localStorage (500ms delay)
+      if (state.puzzleId && state.puzzle) {
+        SavesManager.debouncedSaveProgress(
+          state.puzzleId,
+          newUserGrid,
+          state.checkedCells,
+          state.elapsedSeconds,
+          state.isComplete,
+          state.puzzle
         );
       }
 
@@ -145,38 +192,95 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
       const key = `${row},${col}`;
       const newCheckedCells = new Map(state.checkedCells);
       newCheckedCells.set(key, isCorrect);
+
+      // Save checked cells immediately
+      if (state.puzzleId && state.puzzle) {
+        SavesManager.savePuzzleProgress(
+          state.puzzleId,
+          state.userGrid,
+          newCheckedCells,
+          state.elapsedSeconds,
+          state.isComplete,
+          state.puzzle
+        );
+      }
+
       return { ...state, checkedCells: newCheckedCells };
     }
 
     case 'CLEAR_CHECKS': {
-      return { ...state, checkedCells: new Map() };
+      const newCheckedCells = new Map<string, boolean>();
+
+      // Save immediately
+      if (state.puzzleId && state.puzzle) {
+        SavesManager.savePuzzleProgress(
+          state.puzzleId,
+          state.userGrid,
+          newCheckedCells,
+          state.elapsedSeconds,
+          state.isComplete,
+          state.puzzle
+        );
+      }
+
+      return { ...state, checkedCells: newCheckedCells };
     }
 
     case 'SET_COMPLETE': {
-      return { ...state, isComplete: action.payload };
+      const newIsComplete = action.payload;
+
+      // Save immediately on completion
+      if (state.puzzleId && state.puzzle) {
+        SavesManager.savePuzzleProgress(
+          state.puzzleId,
+          state.userGrid,
+          state.checkedCells,
+          state.elapsedSeconds,
+          newIsComplete,
+          state.puzzle
+        );
+      }
+
+      return { ...state, isComplete: newIsComplete };
     }
 
     case 'INCREMENT_TIMER': {
       const newTime = state.elapsedSeconds + 1;
 
-      // Save to localStorage
-      if (state.puzzleId) {
-        localStorage.setItem(`puzzle-time-${state.puzzleId}`, newTime.toString());
+      // Throttled save to localStorage (every 10 seconds)
+      if (state.puzzleId && state.puzzle) {
+        throttledTimerSave(
+          state.puzzleId,
+          state.userGrid,
+          state.checkedCells,
+          newTime,
+          state.isComplete,
+          state.puzzle
+        );
       }
 
       return { ...state, elapsedSeconds: newTime };
     }
 
     case 'RESET_TIMER': {
-      if (state.puzzleId) {
-        localStorage.removeItem(`puzzle-time-${state.puzzleId}`);
+      // Save with reset time
+      if (state.puzzleId && state.puzzle) {
+        SavesManager.savePuzzleProgress(
+          state.puzzleId,
+          state.userGrid,
+          state.checkedCells,
+          0,
+          state.isComplete,
+          state.puzzle
+        );
       }
       return { ...state, elapsedSeconds: 0 };
     }
 
     case 'CLEAR_GRID': {
+      // Delete the save from SavesManager
       if (state.puzzleId) {
-        localStorage.removeItem(`puzzle-${state.puzzleId}`);
+        SavesManager.deleteSave(state.puzzleId);
       }
       return {
         ...state,
@@ -210,6 +314,11 @@ const PuzzleContext = createContext<PuzzleContextType | undefined>(undefined);
 // Provider
 export function PuzzleProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(puzzleReducer, initialState);
+
+  // Run migration check on mount
+  useEffect(() => {
+    SavesManager.migrateAllOldSaves();
+  }, []);
 
   // Timer effect
   useEffect(() => {

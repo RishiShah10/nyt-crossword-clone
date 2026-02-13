@@ -1,0 +1,314 @@
+/* Modal overlay and container */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modalContainer {
+  background: white;
+  border-radius: 8px;
+  max-width: 1200px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Header */
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.closeBtn:hover {
+  background-color: #f0f0f0;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filterGroup,
+.sortGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filterGroup label,
+.sortGroup label {
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.filterGroup select,
+.sortGroup select {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: white;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.actionBtn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #2196f3;
+  background: white;
+  color: #2196f3;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.actionBtn:hover {
+  background: #2196f3;
+  color: white;
+}
+
+/* Saves count */
+.savesCount {
+  padding: 0.75rem 1.5rem;
+  color: #666;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Cards grid */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+/* Empty state */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #999;
+  text-align: center;
+}
+
+.emptyState p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+/* Puzzle card */
+.puzzleCard {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.puzzleCard:hover {
+  border-color: #2196f3;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Card header */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.puzzleDate {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.completeBadge {
+  background: #4caf50;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Progress bar */
+.progressContainer {
+  margin-bottom: 0.75rem;
+}
+
+.progressBar {
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+}
+
+.progressFill {
+  height: 100%;
+  transition: width 0.3s, background-color 0.3s;
+  border-radius: 4px;
+}
+
+.progressText {
+  font-size: 0.85rem;
+  color: #666;
+  text-align: right;
+}
+
+/* Card stats */
+.cardStats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stat {
+  display: flex;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.statLabel {
+  color: #888;
+}
+
+.statValue {
+  color: #333;
+  font-weight: 500;
+}
+
+/* Card footer */
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lastPlayed {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.exportBtn,
+.deleteBtn {
+  background: none;
+  border: 1px solid #ddd;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+}
+
+.exportBtn {
+  color: #2196f3;
+}
+
+.exportBtn:hover {
+  background: #2196f3;
+  color: white;
+  border-color: #2196f3;
+}
+
+.deleteBtn {
+  color: #f44336;
+}
+
+.deleteBtn:hover {
+  background: #f44336;
+  color: white;
+  border-color: #f44336;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .modalContainer {
+    max-height: 95vh;
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions {
+    margin-left: 0;
+    justify-content: stretch;
+  }
+
+  .actionBtn {
+    flex: 1;
+  }
+
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
+}
