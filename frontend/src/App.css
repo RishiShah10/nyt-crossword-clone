@@ -11,7 +11,7 @@
 /* Header */
 .app-header {
   text-align: left;
-  padding: 30px 40px 20px;
+  padding: 30px 20px 20px;
   border-bottom: 1px solid #e0e0e0;
   background: #ffffff;
 }
@@ -94,7 +94,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 16px 40px;
+  padding: 16px 20px;
   background: #ffffff;
   border-bottom: 1px solid #e0e0e0;
   max-width: 1400px;
@@ -330,7 +330,7 @@
   display: flex;
   gap: 12px;
   align-items: baseline;
-  padding: 20px 40px;
+  padding: 20px 20px;
   background: #f8f8f8;
   border-bottom: 1px solid #e0e0e0;
   max-width: 1400px;
@@ -357,7 +357,7 @@
   display: flex;
   flex-direction: column;
   gap: 30px;
-  padding: 20px 40px 50px;
+  padding: 20px 20px 50px;
   background: #ffffff;
   max-width: 1400px;
   margin: 0 auto;
@@ -368,7 +368,7 @@
   .app-main {
     flex-direction: row;
     align-items: flex-start;
-    padding: 20px 40px 50px;
+    padding: 20px 20px 50px;
     gap: 40px;
   }
 }
@@ -441,7 +441,7 @@
   }
 
   .app-header {
-    padding: 25px 30px 18px;
+    padding: 25px 20px 18px;
   }
 
   .app-header h1 {
@@ -453,7 +453,7 @@
   }
 
   .controls-container {
-    padding: 14px 30px;
+    padding: 14px 20px;
     gap: 16px;
   }
 
@@ -467,7 +467,7 @@
   }
 
   .current-clue {
-    padding: 18px 30px;
+    padding: 18px 20px;
   }
 
   .current-clue-label,
@@ -477,14 +477,14 @@
 
   .app-main {
     gap: 25px;
-    padding: 20px 30px 45px;
+    padding: 20px 20px 45px;
   }
 }
 
 /* Responsive - Mobile */
 @media (max-width: 768px) {
   .app-header {
-    padding: 20px 20px 15px;
+    padding: 20px 15px 15px;
   }
 
   .header-content {
@@ -508,7 +508,7 @@
 
   .controls-container {
     flex-direction: column;
-    padding: 12px 20px;
+    padding: 12px 15px;
     gap: 12px;
     align-items: stretch;
   }
@@ -524,7 +524,7 @@
   }
 
   .current-clue {
-    padding: 15px 20px;
+    padding: 15px 15px;
     flex-direction: column;
     gap: 6px;
     align-items: flex-start;
@@ -537,7 +537,7 @@
 
   .app-main {
     gap: 20px;
-    padding: 15px 20px 40px;
+    padding: 15px 15px 40px;
   }
 
   .completion-banner {

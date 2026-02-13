@@ -39,9 +39,9 @@
 }
 
 .cluesHeading {
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   padding: 0;
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 700;
   background: transparent;
   border-bottom: none;
@@ -82,8 +82,8 @@
 /* Clue Item */
 .clueItem {
   display: flex;
-  gap: 8px;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 14px 0;
   border-bottom: none;
   cursor: pointer;
   transition: background-color 0.1s ease;
@@ -111,9 +111,9 @@
   font-weight: 400;
   border-left: none;
   padding-left: 0;
-  padding-right: 8px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-right: 12px;
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 
 .clueItemActive:hover {
@@ -123,21 +123,21 @@
 .clueNumber {
   font-weight: 700;
   color: #000000;
-  min-width: 24px;
+  min-width: 32px;
   flex-shrink: 0;
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   padding-left: 0;
 }
 
 .clueItemActive .clueNumber {
-  padding-left: 8px;
+  padding-left: 12px;
 }
 
 .clueText {
   color: #000000;
-  line-height: 1.6;
-  font-size: 1.15rem;
+  line-height: 1.7;
+  font-size: 1.35rem;
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   font-weight: 400;
 }
@@ -150,7 +150,7 @@
 @media (max-width: 1024px) {
   .cluesContainer {
     gap: 20px;
-    padding: 0 15px 25px;
+    padding: 0 10px 25px;
   }
 
   .cluesList {
@@ -158,16 +158,33 @@
   }
 
   .cluesHeading {
-    font-size: 1.3rem;
-    padding: 14px 18px;
+    font-size: 1.1rem;
+    margin: 0 0 14px 0;
   }
 
   .clueItem {
-    padding: 10px 12px;
+    padding: 12px 0;
+    gap: 10px;
   }
 
   .clueItemActive {
-    padding-left: 12px;
+    padding-left: 0;
+    padding-right: 10px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .clueItemActive .clueNumber {
+    padding-left: 10px;
+  }
+
+  .clueNumber {
+    font-size: 1.25rem;
+    min-width: 30px;
+  }
+
+  .clueText {
+    font-size: 1.25rem;
   }
 }
 
@@ -176,7 +193,7 @@
   .cluesContainer {
     grid-template-columns: 1fr;
     gap: 20px;
-    padding: 0 15px 25px;
+    padding: 0 10px 25px;
   }
 
   .cluesList {
@@ -184,25 +201,33 @@
   }
 
   .clueItem {
-    padding: 10px 12px;
+    padding: 12px 0;
+    gap: 10px;
   }
 
   .clueItemActive {
-    padding-left: 12px;
+    padding-left: 0;
+    padding-right: 10px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .clueItemActive .clueNumber {
+    padding-left: 10px;
   }
 
   .cluesHeading {
-    padding: 14px 16px;
-    font-size: 1.25rem;
+    font-size: 1.05rem;
+    margin: 0 0 12px 0;
   }
 
   .clueNumber {
     min-width: 28px;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
   }
 
   .clueText {
-    font-size: 0.95rem;
+    font-size: 1.1rem;
   }
 }
 
