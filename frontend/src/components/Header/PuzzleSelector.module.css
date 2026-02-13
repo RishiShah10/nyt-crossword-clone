@@ -2,12 +2,7 @@
 .puzzleSelector {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 16px 40px;
-  background: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
-  max-width: 1400px;
-  margin: 0 auto;
+  justify-content: flex-start;
 }
 
 .selectorGroup {

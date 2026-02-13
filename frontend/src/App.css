@@ -88,17 +88,28 @@
   letter-spacing: 0.5px;
 }
 
+/* Controls Container - combines puzzle selector and action buttons */
+.controls-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 40px;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  max-width: 1400px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
 /* Action Buttons */
 .action-buttons {
   display: flex;
   justify-content: center;
   gap: 12px;
-  padding: 0 40px 25px;
   flex-wrap: wrap;
-  background: transparent;
-  border-bottom: none;
-  max-width: 1400px;
-  margin: 0 auto;
+  flex: 1;
+  min-width: fit-content;
 }
 
 .btn {
@@ -441,8 +452,12 @@
     font-size: 1.3rem;
   }
 
+  .controls-container {
+    padding: 14px 30px;
+    gap: 16px;
+  }
+
   .action-buttons {
-    padding: 0 30px 20px;
     gap: 10px;
   }
 
@@ -491,9 +506,16 @@
     padding: 12px 0;
   }
 
+  .controls-container {
+    flex-direction: column;
+    padding: 12px 20px;
+    gap: 12px;
+    align-items: stretch;
+  }
+
   .action-buttons {
-    padding: 0 20px 18px;
     gap: 8px;
+    justify-content: center;
   }
 
   .btn {
@@ -566,8 +588,12 @@
     padding: 7px 14px;
   }
 
+  .controls-container {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
   .action-buttons {
-    padding: 15px 10px;
     gap: 6px;
   }
 

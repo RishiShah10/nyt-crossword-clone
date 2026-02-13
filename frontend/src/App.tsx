@@ -121,9 +121,10 @@ function App() {
         <Timer />
       </header>
 
-      <PuzzleSelector />
-
-      <ActionButtons onOpenLibrary={() => setShowLibrary(true)} />
+      <div className="controls-container">
+        <PuzzleSelector />
+        <ActionButtons onOpenLibrary={() => setShowLibrary(true)} />
+      </div>
 
       <CurrentClue />
 
