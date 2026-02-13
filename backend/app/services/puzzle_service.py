@@ -24,8 +24,8 @@ class PuzzleService:
         self.github_base_url = github_base_url.rstrip('/')
         self.http_client = httpx.AsyncClient(timeout=30.0)
 
-        # Date range for available puzzles (1977-01-01 to 2018-12-31)
-        self.min_date = datetime(1977, 1, 1)
+        # Date range for available puzzles (2010-01-01 to 2018-12-31)
+        self.min_date = datetime(2010, 1, 1)
         self.max_date = datetime(2018, 12, 31)
 
     async def close(self):
@@ -90,7 +90,7 @@ class PuzzleService:
         try:
             date_obj = datetime.strptime(date, "%Y-%m-%d")
             if not (self.min_date <= date_obj <= self.max_date):
-                print(f"Date {date} is outside available range (1977-2018)")
+                print(f"Date {date} is outside available range (2010-2018)")
                 return None
         except ValueError:
             print(f"Invalid date format: {date}")
@@ -142,7 +142,7 @@ class PuzzleService:
         day = today.day
 
         # Pick a random year from the available range
-        available_years = list(range(1977, 2019))
+        available_years = list(range(2010, 2019))
         random_year = random.choice(available_years)
 
         # Construct date string

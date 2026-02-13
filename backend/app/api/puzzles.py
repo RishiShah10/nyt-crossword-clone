@@ -21,7 +21,7 @@ async def get_puzzle_by_date(date: str):
     """Get a crossword puzzle by date.
 
     Args:
-        date: Date in YYYY-MM-DD format (1977-01-01 to 2018-12-31)
+        date: Date in YYYY-MM-DD format (2010-01-01 to 2018-12-31)
 
     Returns:
         Puzzle data with metadata
@@ -33,7 +33,7 @@ async def get_puzzle_by_date(date: str):
     if puzzle is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Puzzle not found for date {date}. Available range: 1977-2018."
+            detail=f"Puzzle not found for date {date}. Available range: 2010-2018."
         )
 
     return PuzzleResponse(puzzle=puzzle, puzzle_id=date)
