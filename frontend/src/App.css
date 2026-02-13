@@ -373,14 +373,13 @@
   }
 
   .app-main > :first-child {
-    flex-basis: auto;
+    flex-basis: 75%;
     flex-shrink: 0;
   }
 
   .app-main > :last-child {
-    flex-basis: auto;
+    flex-basis: 25%;
     flex-shrink: 0;
-    flex-grow: 1;
   }
 }
 
