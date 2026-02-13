@@ -4,6 +4,7 @@ import { puzzleApi } from './api/client';
 import Grid from './components/Grid/Grid';
 import ClueList from './components/Clues/ClueList';
 import Timer from './components/Header/Timer';
+import PuzzleSelector from './components/Header/PuzzleSelector';
 import ActionButtons from './components/Header/ActionButtons';
 import CurrentClue from './components/Header/CurrentClue';
 import './App.css';
@@ -74,6 +75,8 @@ function App() {
         </div>
         <Timer />
       </header>
+
+      <PuzzleSelector />
 
       <ActionButtons />
 

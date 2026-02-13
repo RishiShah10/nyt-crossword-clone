@@ -1,0 +1,153 @@
+/* Puzzle Selector Container */
+.puzzleSelector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px 40px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #e0e0e0;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #000000;
+  white-space: nowrap;
+  font-family: 'Open Sans', sans-serif;
+}
+
+/* Date Input Styling */
+.dateInput {
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 400;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Open Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dateInput:hover:not(:disabled) {
+  background: #f7f7f7;
+  border-color: #999999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.dateInput:focus {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
+.dateInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Random Button Styling */
+.randomBtn {
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.randomBtn:hover:not(:disabled) {
+  background: #f7f7f7;
+  border-color: #999999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.randomBtn:active:not(:disabled) {
+  transform: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: #eeeeee;
+}
+
+.randomBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+  .puzzleSelector {
+    padding: 18px 30px;
+    gap: 14px;
+  }
+
+  .label {
+    font-size: 0.95rem;
+  }
+
+  .dateInput,
+  .randomBtn {
+    font-size: 0.9rem;
+    padding: 9px 16px;
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+  .puzzleSelector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 15px 20px;
+  }
+
+  .label {
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .dateInput,
+  .randomBtn {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    font-size: 0.9rem;
+  }
+}
+
+/* Responsive - Small Mobile */
+@media (max-width: 480px) {
+  .puzzleSelector {
+    padding: 12px 12px;
+    gap: 10px;
+  }
+
+  .label {
+    font-size: 0.9rem;
+  }
+
+  .dateInput,
+  .randomBtn {
+    font-size: 0.85rem;
+    padding: 8px 14px;
+    max-width: 280px;
+  }
+}
+
+/* Extra Small Screens */
+@media (max-width: 380px) {
+  .dateInput,
+  .randomBtn {
+    font-size: 0.8rem;
+    padding: 7px 12px;
+  }
+}
