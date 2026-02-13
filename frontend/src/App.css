@@ -356,8 +356,8 @@
 .app-main {
   display: flex;
   flex-direction: column;
-  gap: 40px;
-  padding: 35px 40px 50px;
+  gap: 30px;
+  padding: 20px 40px 50px;
   background: #ffffff;
   max-width: 1400px;
   margin: 0 auto;
@@ -368,8 +368,8 @@
   .app-main {
     flex-direction: row;
     align-items: flex-start;
-    padding: 35px 40px 50px;
-    gap: 60px;
+    padding: 20px 40px 50px;
+    gap: 40px;
   }
 }
 
@@ -476,8 +476,8 @@
   }
 
   .app-main {
-    gap: 35px;
-    padding: 30px 30px 45px;
+    gap: 25px;
+    padding: 20px 30px 45px;
   }
 }
 
@@ -536,8 +536,8 @@
   }
 
   .app-main {
-    gap: 30px;
-    padding: 25px 20px 40px;
+    gap: 20px;
+    padding: 15px 20px 40px;
   }
 
   .completion-banner {
@@ -604,8 +604,8 @@
   }
 
   .app-main {
-    gap: 20px;
-    padding-top: 15px;
+    gap: 15px;
+    padding-top: 10px;
   }
 
   .completion-banner {
