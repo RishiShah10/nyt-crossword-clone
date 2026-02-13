@@ -371,6 +371,16 @@
     padding: 20px 5px 50px;
     gap: 40px;
   }
+
+  .app-main > :first-child {
+    flex-basis: 75%;
+    flex-shrink: 0;
+  }
+
+  .app-main > :last-child {
+    flex-basis: 25%;
+    flex-shrink: 0;
+  }
 }
 
 /* Completion Banner */

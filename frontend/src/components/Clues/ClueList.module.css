@@ -16,6 +16,11 @@
     padding: 0;
     max-width: none;
     min-width: 400px;
+    height: fit-content;
+  }
+
+  .cluesList {
+    max-height: calc(75px * 15 + 80px);
   }
 }
 
@@ -57,7 +62,6 @@
   padding: 0;
   margin: 0;
   overflow-y: auto;
-  max-height: 550px;
   scrollbar-width: thin;
   scrollbar-color: #c0c0c0 #f5f5f5;
 }

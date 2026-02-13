@@ -39,8 +39,8 @@
 /* Cell Styles */
 .cell {
   position: relative;
-  width: 62px;
-  height: 62px;
+  width: 75px;
+  height: 75px;
   box-sizing: border-box;
 }
 
@@ -140,9 +140,9 @@
 /* Cell Number */
 .cellNumber {
   position: absolute;
-  top: 4px;
-  left: 5px;
-  font-size: 13px;
+  top: 5px;
+  left: 6px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1;
   pointer-events: none;
@@ -161,7 +161,7 @@
   border: none;
   background: transparent;
   text-align: center;
-  font-size: 34px;
+  font-size: 40px;
   font-weight: 700;
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   text-transform: uppercase;
