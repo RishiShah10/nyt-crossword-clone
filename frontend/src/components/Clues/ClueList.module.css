@@ -17,10 +17,11 @@
     max-width: none;
     min-width: 400px;
     height: fit-content;
+    max-height: calc(75px * 5 + 4px);
   }
 
   .cluesList {
-    max-height: calc(75px * 15 + 80px);
+    max-height: calc(75px * 5 + 4px - 100px);
   }
 }
 
