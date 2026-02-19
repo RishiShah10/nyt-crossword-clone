@@ -123,13 +123,19 @@ class PuzzleService:
         Returns:
             Random puzzle model if successful, None otherwise
         """
-        # Generate random date between min and max
         time_delta = self.max_date - self.min_date
-        random_days = random.randint(0, time_delta.days)
-        random_date = self.min_date + timedelta(days=random_days)
-        date_str = random_date.strftime("%Y-%m-%d")
 
-        return await self.get_puzzle(date_str)
+        # Try up to 10 random dates in case some don't have puzzles
+        for _ in range(10):
+            random_days = random.randint(0, time_delta.days)
+            random_date = self.min_date + timedelta(days=random_days)
+            date_str = random_date.strftime("%Y-%m-%d")
+
+            puzzle = await self.get_puzzle(date_str)
+            if puzzle:
+                return puzzle
+
+        return None
 
     async def get_today_historical_puzzle(self) -> Optional[Puzzle]:
         """Get today's historical puzzle (same month/day from a past year).
