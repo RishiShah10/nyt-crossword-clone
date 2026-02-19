@@ -1,6 +1,6 @@
 /* App Container */
 .app {
-  max-width: 1800px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0;
   height: 100vh;
@@ -14,52 +14,52 @@
 /* Header */
 .app-header {
   text-align: left;
-  padding: 12px 5px 8px;
+  padding: 8px 16px 6px;
   border-bottom: 1px solid #e0e0e0;
   background: #ffffff;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .header-content {
   display: flex;
   justify-content: flex-start;
   align-items: baseline;
-  gap: 12px;
-  max-width: 1800px;
-  margin: 0 auto;
+  gap: 10px;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #000000;
   letter-spacing: -0.5px;
   font-family: 'Libre Baskerville', Georgia, serif;
+  white-space: nowrap;
 }
 
 .app-header h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 0.85rem;
   font-weight: 400;
-  color: #000000;
+  color: #555555;
   letter-spacing: 0;
   font-family: 'Libre Baskerville', Georgia, serif;
+  white-space: nowrap;
 }
 
 .puzzle-meta {
   display: flex;
   gap: 0;
   justify-content: flex-start;
-  margin-top: 4px;
   flex-wrap: wrap;
-  max-width: 1800px;
-  margin: 4px auto 0;
 }
 
 .puzzle-meta .author,
 .puzzle-meta .date {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #666666;
   font-weight: 400;
 }
@@ -69,21 +69,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-size: 0.95rem;
+  gap: 5px;
+  font-size: 0.875rem;
   font-weight: 400;
   color: #000000;
   background: transparent;
-  padding: 8px 0;
+  padding: 0;
   border-radius: 0;
   border: none;
   box-shadow: none;
-  margin: 0 auto;
-  max-width: 1800px;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .timer-icon {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: #666666;
 }
 
@@ -97,12 +97,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 5px;
+  gap: 10px;
+  padding: 5px 16px;
   background: #ffffff;
   border-bottom: 1px solid #e0e0e0;
-  max-width: 1800px;
-  margin: 0 auto;
   flex-wrap: wrap;
   flex-shrink: 0;
 }
@@ -111,15 +109,15 @@
 .action-buttons {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   flex: 1;
   min-width: fit-content;
 }
 
 .btn {
-  padding: 6px 14px;
-  font-size: 0.85rem;
+  padding: 4px 10px;
+  font-size: 0.72rem;
   font-weight: 500;
   border: 1px solid #cccccc;
   border-radius: 4px;
@@ -127,7 +125,7 @@
   color: #000000;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   letter-spacing: 0;
 }
 
@@ -135,7 +133,7 @@
   background: #f7f7f7;
   border-color: #999999;
   transform: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
 }
 
 .btn:active {
@@ -174,25 +172,25 @@
 
 .reveal-menu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 6px);
   left: 0;
   background: white;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   z-index: 100;
-  min-width: 180px;
+  min-width: 170px;
   display: flex;
   flex-direction: column;
-  padding: 6px 0;
-  animation: slideDown 0.2s ease-out;
+  padding: 4px 0;
+  animation: slideDown 0.15s ease-out;
   overflow: hidden;
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -201,15 +199,15 @@
 }
 
 .reveal-menu-item {
-  padding: 12px 18px;
+  padding: 10px 16px;
   border: none;
   background: white;
   color: #333;
   text-align: left;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
   border-left: 3px solid transparent;
   display: flex;
@@ -220,7 +218,7 @@
 .reveal-menu-item:hover {
   background: #f8f9fa;
   border-left-color: #2196f3;
-  padding-left: 22px;
+  padding-left: 20px;
 }
 
 .reveal-menu-item + .reveal-menu-item {
@@ -333,27 +331,25 @@
 /* Current Clue Display */
 .current-clue {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: baseline;
-  padding: 10px 5px;
+  padding: 7px 16px;
   background: #f8f8f8;
   border-bottom: 1px solid #e0e0e0;
-  max-width: 1800px;
-  margin: 0 auto;
   flex-shrink: 0;
 }
 
 .current-clue-label {
   font-weight: 700;
   color: #000000;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   white-space: nowrap;
   font-family: 'Open Sans', sans-serif;
 }
 
 .current-clue-text {
   color: #333333;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   line-height: 1.4;
   font-family: 'Open Sans', sans-serif;
 }
@@ -362,33 +358,34 @@
 .app-main {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 15px 5px;
+  gap: 12px;
+  padding: 12px 16px;
   background: #ffffff;
-  max-width: 1800px;
-  margin: 0 auto;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
 /* Desktop Layout - Side by side grid and clues */
-@media (min-width: 1200px) {
+@media (min-width: 900px) {
   .app-main {
     flex-direction: row;
     align-items: flex-start;
-    padding: 15px 5px;
-    gap: 30px;
+    padding: 12px 16px;
+    gap: 16px;
   }
 
   .app-main > :first-child {
-    flex: 0 0 75%;
-    max-width: 75%;
+    flex-shrink: 0;
+    align-self: flex-start;
   }
 
   .app-main > :last-child {
-    flex: 0 0 25%;
+    flex: 1;
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    align-self: stretch;
   }
 }
 
@@ -400,9 +397,9 @@
   transform: translateX(-50%);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 22px 45px;
+  padding: 18px 40px;
   border-radius: 50px;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: 700;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.5s ease-out;
@@ -454,7 +451,7 @@
 }
 
 /* Responsive - Tablet */
-@media (max-width: 1024px) {
+@media (max-width: 899px) {
   .app {
     padding: 0;
     height: auto;
@@ -463,49 +460,47 @@
   }
 
   .app-header {
-    padding: 20px 10px 15px;
+    padding: 12px 16px 10px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .app-header h1 {
-    font-size: 2.2rem;
-  }
-
-  .app-header h2 {
-    font-size: 1.3rem;
+    font-size: 1.5rem;
   }
 
   .controls-container {
-    padding: 12px 10px;
-    gap: 14px;
+    padding: 8px 16px;
+    gap: 10px;
   }
 
   .action-buttons {
-    gap: 8px;
+    gap: 6px;
   }
 
   .btn {
-    padding: 8px 16px;
-    font-size: 0.9rem;
+    padding: 6px 12px;
+    font-size: 0.8rem;
   }
 
   .current-clue {
-    padding: 15px 10px;
+    padding: 10px 16px;
   }
 
   .current-clue-label,
   .current-clue-text {
-    font-size: 1rem;
+    font-size: 0.9rem;
   }
 
   .app-main {
-    gap: 20px;
-    padding: 15px 10px 40px;
+    gap: 16px;
+    padding: 12px 16px 30px;
     overflow: auto;
   }
 }
 
 /* Responsive - Mobile */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .app {
     height: auto;
     min-height: 100vh;
@@ -513,169 +508,69 @@
   }
 
   .app-header {
-    padding: 15px 15px 12px;
+    padding: 10px 12px 8px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .header-content {
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
+    gap: 2px;
   }
 
   .app-header h1 {
-    font-size: 1.8rem;
-  }
-
-  .app-header h2 {
     font-size: 1.2rem;
   }
 
+  .app-header h2 {
+    font-size: 0.8rem;
+  }
+
   .timer {
-    font-size: 1rem;
-    padding: 10px 0;
+    font-size: 0.85rem;
+    margin-left: 0;
   }
 
   .controls-container {
     flex-direction: column;
-    padding: 10px 15px;
-    gap: 10px;
+    padding: 8px 12px;
+    gap: 8px;
     align-items: stretch;
   }
 
   .action-buttons {
-    gap: 6px;
+    gap: 5px;
     justify-content: center;
   }
 
   .btn {
-    padding: 8px 16px;
-    font-size: 0.85rem;
+    padding: 6px 10px;
+    font-size: 0.75rem;
   }
 
   .current-clue {
-    padding: 12px 15px;
+    padding: 8px 12px;
     flex-direction: column;
-    gap: 5px;
+    gap: 3px;
     align-items: flex-start;
   }
 
   .current-clue-label,
   .current-clue-text {
-    font-size: 0.95rem;
+    font-size: 0.875rem;
   }
 
   .app-main {
-    gap: 15px;
-    padding: 12px 15px 35px;
+    gap: 12px;
+    padding: 10px 12px 25px;
     overflow: auto;
   }
 
   .completion-banner {
-    font-size: 1.3rem;
-    padding: 18px 35px;
-    bottom: 20px;
-  }
-
-  @keyframes slideUp {
-    from {
-      bottom: -100px;
-      opacity: 0;
-    }
-    to {
-      bottom: 20px;
-      opacity: 1;
-    }
-  }
-}
-
-/* Responsive - Small Mobile */
-@media (max-width: 480px) {
-  .app-header {
-    padding: 12px 12px 18px;
-    border-bottom: 1px solid #e8e8e8;
-  }
-
-  .app-header h1 {
-    font-size: 1.5rem;
-  }
-
-  .app-header h2 {
-    font-size: 1.05rem;
-  }
-
-  .puzzle-meta {
-    gap: 12px;
-    font-size: 0.9rem;
-  }
-
-  .puzzle-meta .author,
-  .puzzle-meta .date {
-    font-size: 0.9rem;
-  }
-
-  .timer {
-    font-size: 1rem;
-    padding: 7px 14px;
-  }
-
-  .controls-container {
-    padding: 10px 12px;
-    gap: 10px;
-  }
-
-  .action-buttons {
-    gap: 6px;
-  }
-
-  .btn {
-    padding: 8px 14px;
-    font-size: 0.85rem;
-    border-width: 1.5px;
-  }
-
-  .app-main {
-    gap: 15px;
-    padding-top: 10px;
-  }
-
-  .completion-banner {
     font-size: 1.1rem;
-    padding: 15px 28px;
-    bottom: 15px;
-  }
-
-  @keyframes slideUp {
-    from {
-      bottom: -100px;
-      opacity: 0;
-    }
-    to {
-      bottom: 15px;
-      opacity: 1;
-    }
-  }
-
-  .loading,
-  .error {
-    padding: 40px 15px;
-    font-size: 1.2rem;
-  }
-}
-
-/* Extra Small Screens */
-@media (max-width: 380px) {
-  .app-header h1 {
-    font-size: 1.3rem;
-  }
-
-  .btn {
-    padding: 7px 12px;
-    font-size: 0.8rem;
-  }
-
-  .completion-banner {
-    font-size: 1rem;
-    padding: 12px 24px;
+    padding: 14px 28px;
+    bottom: 16px;
   }
 }
 

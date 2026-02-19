@@ -1,29 +1,25 @@
-/* Clues Container */
+/* Clues Container - two-column layout for Across/Down */
 .cluesContainer {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 25px;
+  gap: 16px;
   padding: 0;
-  max-width: 1200px;
-  margin: 0;
   width: 100%;
-  flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
-/* Desktop Layout Adjustments */
-@media (min-width: 1200px) {
+/* Desktop: clues fill the same height as the grid */
+@media (min-width: 900px) {
   .cluesContainer {
-    flex: 1;
-    padding: 0;
-    max-width: none;
-    min-width: 350px;
     height: 100%;
+    max-height: 100%;
+    overflow: hidden;
   }
 
   .cluesList {
-    max-height: calc(100vh - 280px);
+    /* On desktop, clue list scrolls within the grid height */
+    max-height: 100%;
   }
 }
 
@@ -45,15 +41,17 @@
   overflow: hidden;
   box-shadow: none;
   min-height: 0;
+  height: 100%;
 }
 
 .cluesHeading {
-  margin: 0 0 12px 0;
+  margin: 0 0 6px 0;
   padding: 0;
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 700;
   background: transparent;
-  border-bottom: none;
+  border-bottom: 2px solid #000000;
+  padding-bottom: 4px;
   color: #000000;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -74,7 +72,7 @@
 }
 
 .cluesList::-webkit-scrollbar {
-  width: 8px;
+  width: 4px;
 }
 
 .cluesList::-webkit-scrollbar-track {
@@ -93,8 +91,8 @@
 /* Clue Item */
 .clueItem {
   display: flex;
-  gap: 10px;
-  padding: 10px 0;
+  gap: 6px;
+  padding: 5px 4px;
   border-bottom: none;
   cursor: pointer;
   transition: background-color 0.1s ease;
@@ -102,6 +100,7 @@
   outline: none;
   border-radius: 0;
   margin-bottom: 0;
+  line-height: 1.35;
 }
 
 .clueItem:last-child {
@@ -109,7 +108,7 @@
 }
 
 .clueItem:hover {
-  background: transparent;
+  background: #f4f4f4;
 }
 
 .clueItem:focus-visible {
@@ -120,11 +119,6 @@
 .clueItemActive {
   background: #A7D8F0;
   font-weight: 400;
-  border-left: none;
-  padding-left: 0;
-  padding-right: 10px;
-  padding-top: 10px;
-  padding-bottom: 10px;
 }
 
 .clueItemActive:hover {
@@ -134,21 +128,22 @@
 .clueNumber {
   font-weight: 700;
   color: #000000;
-  min-width: 28px;
+  min-width: 20px;
   flex-shrink: 0;
-  font-size: 1.1rem;
+  font-size: 0.8rem;
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   padding-left: 0;
+  line-height: 1.35;
 }
 
 .clueItemActive .clueNumber {
-  padding-left: 10px;
+  padding-left: 6px;
 }
 
 .clueText {
   color: #000000;
-  line-height: 1.5;
-  font-size: 1.1rem;
+  line-height: 1.35;
+  font-size: 0.8rem;
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   font-weight: 400;
 }
@@ -158,99 +153,51 @@
 }
 
 /* Responsive - Tablet */
-@media (max-width: 1024px) {
+@media (max-width: 899px) {
   .cluesContainer {
-    gap: 20px;
-    padding: 0 10px 25px;
+    gap: 16px;
+    padding: 0;
+    overflow: visible;
   }
 
   .cluesList {
-    max-height: 450px;
+    max-height: 380px;
+  }
+
+  .cluesSection {
+    height: auto;
   }
 
   .cluesHeading {
-    font-size: 1.1rem;
-    margin: 0 0 14px 0;
+    font-size: 0.85rem;
+    margin: 0 0 6px 0;
   }
 
   .clueItem {
-    padding: 12px 0;
-    gap: 10px;
-  }
-
-  .clueItemActive {
-    padding-left: 0;
-    padding-right: 10px;
-    padding-top: 12px;
-    padding-bottom: 12px;
+    padding: 7px 4px;
+    gap: 8px;
   }
 
   .clueItemActive .clueNumber {
-    padding-left: 10px;
+    padding-left: 8px;
   }
 
   .clueNumber {
-    font-size: 1.25rem;
-    min-width: 30px;
+    font-size: 0.85rem;
+    min-width: 22px;
   }
 
   .clueText {
-    font-size: 1.25rem;
+    font-size: 0.85rem;
   }
 }
 
 /* Responsive - Mobile (Stack vertically) */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .cluesContainer {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 0 10px 25px;
-  }
-
-  .cluesList {
-    max-height: 350px;
-  }
-
-  .clueItem {
-    padding: 12px 0;
-    gap: 10px;
-  }
-
-  .clueItemActive {
-    padding-left: 0;
-    padding-right: 10px;
-    padding-top: 12px;
-    padding-bottom: 12px;
-  }
-
-  .clueItemActive .clueNumber {
-    padding-left: 10px;
-  }
-
-  .cluesHeading {
-    font-size: 1.05rem;
-    margin: 0 0 12px 0;
-  }
-
-  .clueNumber {
-    min-width: 28px;
-    font-size: 1.1rem;
-  }
-
-  .clueText {
-    font-size: 1.1rem;
-  }
-}
-
-/* Responsive - Small Mobile */
-@media (max-width: 480px) {
-  .cluesContainer {
-    gap: 15px;
-    padding: 0 10px 20px;
-  }
-
-  .cluesSection {
-    border: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0;
   }
 
   .cluesList {
@@ -258,27 +205,60 @@
   }
 
   .clueItem {
-    padding: 8px 10px;
+    padding: 6px 4px;
     gap: 6px;
   }
 
+  .clueItemActive .clueNumber {
+    padding-left: 6px;
+  }
+
   .cluesHeading {
-    padding: 10px 0 6px;
-    font-size: 1rem;
+    font-size: 0.8rem;
+    margin: 0 0 4px 0;
   }
 
   .clueNumber {
-    min-width: 22px;
-    font-size: 0.85rem;
+    min-width: 18px;
+    font-size: 0.75rem;
   }
 
   .clueText {
-    font-size: 0.85rem;
-    line-height: 1.4;
+    font-size: 0.75rem;
+  }
+}
+
+/* Responsive - Small Mobile */
+@media (max-width: 480px) {
+  .cluesContainer {
+    gap: 10px;
+  }
+
+  .cluesList {
+    max-height: 240px;
+  }
+
+  .clueItem {
+    padding: 5px 4px;
+    gap: 5px;
+  }
+
+  .cluesHeading {
+    font-size: 0.75rem;
+    padding-bottom: 3px;
+  }
+
+  .clueNumber {
+    min-width: 16px;
+    font-size: 0.72rem;
+  }
+
+  .clueText {
+    font-size: 0.72rem;
   }
 
   .clueItemActive {
     border-left: none;
-    padding-left: 10px;
+    padding-left: 4px;
   }
 }
