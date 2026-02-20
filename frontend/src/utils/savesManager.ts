@@ -200,6 +200,26 @@ class SavesManager {
   }
 
   /**
+   * Delete all saves by IDs (awaits API deletions)
+   */
+  async deleteAllSaves(puzzleIds: string[]): Promise<void> {
+    // Clear all from localStorage
+    const index = this.getSavesIndex();
+    for (const id of puzzleIds) {
+      localStorage.removeItem(`${SAVE_KEY_PREFIX}${id}`);
+      delete index.saves[id];
+    }
+    localStorage.setItem(SAVES_INDEX_KEY, JSON.stringify(index));
+
+    // Delete all from API if authenticated
+    if (this.isAuthenticated) {
+      await Promise.all(
+        puzzleIds.map(id => savesApi.deleteSave(id).catch(err => console.error('Error deleting from server:', err)))
+      );
+    }
+  }
+
+  /**
    * Clean up old abandoned saves
    */
   cleanupOldSaves(maxAgeInDays: number = 30): number {

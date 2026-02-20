@@ -38,8 +38,8 @@ const PuzzleLibrary: React.FC<PuzzleLibraryProps> = ({ isOpen, onClose, onSelect
     }
   };
 
-  const handleDelete = (puzzleId: string) => {
-    SavesManager.deleteSave(puzzleId);
+  const handleDelete = async (puzzleId: string) => {
+    await SavesManager.deleteAllSaves([puzzleId]);
     loadSaves();
   };
 
@@ -93,14 +93,14 @@ const PuzzleLibrary: React.FC<PuzzleLibraryProps> = ({ isOpen, onClose, onSelect
     input.click();
   };
 
-  const handleCleanup = () => {
+  const handleCleanup = async () => {
     if (saves.length === 0) {
       alert('No saves to delete.');
       return;
     }
 
     if (confirm(`Delete all ${saves.length} saved puzzle${saves.length !== 1 ? 's' : ''}? This cannot be undone.`)) {
-      saves.forEach(s => SavesManager.deleteSave(s.puzzleId));
+      await SavesManager.deleteAllSaves(saves.map(s => s.puzzleId));
       loadSaves();
     }
   };
