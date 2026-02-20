@@ -44,6 +44,27 @@ function App() {
     loadPuzzle();
   }, []);
 
+  // Handler to load a random puzzle
+  const handleLoadRandom = async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const response = await puzzleApi.getRandomPuzzle();
+      dispatch({
+        type: 'SET_PUZZLE',
+        payload: {
+          puzzle: response.puzzle,
+          puzzleId: response.puzzle_id,
+        },
+      });
+    } catch (error) {
+      console.error('Error loading random puzzle:', error);
+      dispatch({
+        type: 'SET_ERROR',
+        payload: 'Failed to load puzzle. Please try again.',
+      });
+    }
+  };
+
   // Handler to load a saved puzzle from library
   const handleSelectPuzzle = async (puzzleId: string) => {
     try {
@@ -121,7 +142,7 @@ function App() {
       </header>
 
       <div className="controls-container">
-        <ActionButtons onOpenLibrary={() => setShowLibrary(true)} />
+        <ActionButtons onOpenLibrary={() => setShowLibrary(true)} onLoadRandom={handleLoadRandom} />
       </div>
 
       <CurrentClue />

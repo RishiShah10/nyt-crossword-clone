@@ -6,9 +6,10 @@ import SavesManager from '../../utils/savesManager';
 
 interface ActionButtonsProps {
   onOpenLibrary?: () => void;
+  onLoadRandom?: () => void;
 }
 
-const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary }) => {
+const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRandom }) => {
   const { state, dispatch } = usePuzzle();
   const [showConfirm, setShowConfirm] = useState<'reveal' | null>(null);
   const [showSaved, setShowSaved] = useState(false);
@@ -265,6 +266,17 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary }) => {
           aria-label="Open puzzle library"
         >
           📚 Library
+        </button>
+      )}
+
+      {onLoadRandom && (
+        <button
+          className="btn btn-library"
+          onClick={onLoadRandom}
+          title="Load a random puzzle"
+          aria-label="Load a random puzzle"
+        >
+          🎲 Random
         </button>
       )}
 
