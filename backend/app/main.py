@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from .api import puzzles_router
+from .api import puzzles_router, auth_router, saves_router
 from .config import settings
 from .services import CacheService, PuzzleService
+from .db.init_db import init_db
 
 
 @asynccontextmanager
@@ -11,6 +12,10 @@ async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Startup
     print("Starting NYT Crossword Clone Backend...")
+
+    # Initialize database
+    if settings.DATABASE_URL:
+        await init_db()
     print(f"Cache directory: {settings.CACHE_DIR}")
 
     # Pre-fetch recent puzzles on startup
@@ -53,6 +58,8 @@ app.add_middleware(
 
 # Register routers
 app.include_router(puzzles_router)
+app.include_router(auth_router)
+app.include_router(saves_router)
 
 
 @app.get("/")

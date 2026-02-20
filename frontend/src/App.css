@@ -82,6 +82,14 @@
   font-weight: 400;
 }
 
+/* Auth Section */
+.auth-section {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 /* Timer */
 .timer {
   display: flex;
@@ -96,7 +104,6 @@
   border-radius: 0;
   border: none;
   box-shadow: none;
-  margin-left: auto;
   white-space: nowrap;
 }
 

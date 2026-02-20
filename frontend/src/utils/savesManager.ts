@@ -3,6 +3,7 @@
 import type { Puzzle } from '../types/puzzle';
 import type { SaveData, SaveMetadata, SavesIndex } from '../types/saves';
 import { debounce } from './debounce';
+import { savesApi } from '../api/savesApi';
 
 const SAVES_INDEX_KEY = 'crossword-saves-index';
 const SAVE_KEY_PREFIX = 'crossword-save-';
@@ -14,10 +15,22 @@ const LEGACY_TIME_PREFIX = 'puzzle-time-';
 
 class SavesManager {
   private static instance: SavesManager;
+  private _authToken: string | null = null;
 
   private constructor() {
     // Private constructor for singleton
     this.flushPendingSavesOnUnload();
+  }
+
+  /**
+   * Set auth token to enable API saves (called by AuthContext)
+   */
+  setAuthToken(token: string | null): void {
+    this._authToken = token;
+  }
+
+  get isAuthenticated(): boolean {
+    return this._authToken !== null;
   }
 
   static getInstance(): SavesManager {
@@ -79,10 +92,23 @@ class SavesManager {
 
       index.saves[puzzleId] = metadata;
       localStorage.setItem(SAVES_INDEX_KEY, JSON.stringify(index));
+
+      // Also save to API if authenticated (fire and forget)
+      if (this.isAuthenticated) {
+        savesApi.upsertSave(puzzleId, {
+          user_grid: Array.from(userGrid.entries()),
+          checked_cells: Array.from(checkedCells.entries()),
+          elapsed_seconds: elapsedSeconds,
+          is_complete: isComplete,
+          cells_filled: cellsFilled,
+          total_cells: totalCells,
+          completion_pct: completionPercent,
+          puzzle_date: puzzle.date || puzzleId,
+        }).catch(err => console.error('Error saving to server:', err));
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
         console.error('localStorage quota exceeded. Consider cleaning up old saves.');
-        // Could trigger cleanup automatically here
       } else {
         console.error('Error saving puzzle progress:', error);
       }
@@ -156,13 +182,18 @@ class SavesManager {
    */
   deleteSave(puzzleId: string): void {
     try {
-      // Remove puzzle data
+      // Remove puzzle data from localStorage
       localStorage.removeItem(`${SAVE_KEY_PREFIX}${puzzleId}`);
 
       // Update index
       const index = this.getSavesIndex();
       delete index.saves[puzzleId];
       localStorage.setItem(SAVES_INDEX_KEY, JSON.stringify(index));
+
+      // Also delete from API if authenticated
+      if (this.isAuthenticated) {
+        savesApi.deleteSave(puzzleId).catch(err => console.error('Error deleting from server:', err));
+      }
     } catch (error) {
       console.error('Error deleting save:', error);
     }
@@ -199,6 +230,18 @@ class SavesManager {
     } catch (error) {
       console.error('Error cleaning up old saves:', error);
       return 0;
+    }
+  }
+
+  /**
+   * Get all saves from API (for authenticated users)
+   */
+  async getAllSavesFromApi(): Promise<SaveMetadata[]> {
+    if (!this.isAuthenticated) return [];
+    try {
+      return await savesApi.listSaves();
+    } catch {
+      return [];
     }
   }
 

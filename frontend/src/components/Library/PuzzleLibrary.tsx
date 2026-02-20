@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import SavesManager from '../../utils/savesManager';
+import { useAuth } from '../../context/AuthContext';
 import type { SaveMetadata } from '../../types/saves';
 import PuzzleCard from './PuzzleCard';
 import styles from './PuzzleLibrary.module.css';
@@ -16,6 +17,7 @@ type FilterType = 'all' | 'in-progress' | 'completed';
 type SortType = 'last-played' | 'date' | 'completion';
 
 const PuzzleLibrary: React.FC<PuzzleLibraryProps> = ({ isOpen, onClose, onSelectPuzzle }) => {
+  const { isAuthenticated } = useAuth();
   const [saves, setSaves] = useState<SaveMetadata[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('last-played');
@@ -26,9 +28,14 @@ const PuzzleLibrary: React.FC<PuzzleLibraryProps> = ({ isOpen, onClose, onSelect
     }
   }, [isOpen]);
 
-  const loadSaves = () => {
-    const allSaves = SavesManager.getAllSaves();
-    setSaves(allSaves);
+  const loadSaves = async () => {
+    if (isAuthenticated) {
+      const apiSaves = await SavesManager.getAllSavesFromApi();
+      setSaves(apiSaves);
+    } else {
+      const localSaves = SavesManager.getAllSaves();
+      setSaves(localSaves);
+    }
   };
 
   const handleDelete = (puzzleId: string) => {

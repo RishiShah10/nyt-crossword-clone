@@ -27,5 +27,15 @@ class Settings:
         "https://raw.githubusercontent.com/doshea/nyt_crosswords/master"
     )
 
+    # Database
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+
+    # JWT
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
+    JWT_EXPIRY_HOURS: int = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
+
 
 settings = Settings()

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { usePuzzle } from './context/PuzzleContext';
+import { useAuth } from './context/AuthContext';
 import { puzzleApi } from './api/client';
 import Grid from './components/Grid/Grid';
 import ClueList from './components/Clues/ClueList';
@@ -7,17 +8,53 @@ import Timer from './components/Header/Timer';
 import ActionButtons from './components/Header/ActionButtons';
 import CurrentClue from './components/Header/CurrentClue';
 import PuzzleLibrary from './components/Library/PuzzleLibrary';
+import GoogleSignIn from './components/Auth/GoogleSignIn';
+import UserMenu from './components/Auth/UserMenu';
 import SavesManager from './utils/savesManager';
+import { savesApi } from './api/savesApi';
 import './App.css';
 
 function App() {
   const { state, dispatch } = usePuzzle();
+  const { isAuthenticated, isNewUser, clearNewUserFlag } = useAuth();
   const [showLibrary, setShowLibrary] = useState(false);
 
   // Cleanup old saves on mount
   useEffect(() => {
     SavesManager.cleanupOldSaves(30);
   }, []);
+
+  // Migration: offer to upload localStorage saves when new user signs in
+  useEffect(() => {
+    if (isNewUser && isAuthenticated) {
+      const localSaves = SavesManager.getAllSaves();
+      if (localSaves.length > 0) {
+        const shouldMigrate = confirm(
+          `Welcome! We found ${localSaves.length} saved puzzle${localSaves.length !== 1 ? 's' : ''} on this device. Upload them to your account?`
+        );
+        if (shouldMigrate) {
+          const savesToUpload = localSaves.map(meta => {
+            const saveData = SavesManager.loadPuzzleProgress(meta.puzzleId);
+            return {
+              puzzle_id: meta.puzzleId,
+              user_grid: saveData?.userGrid ? Array.from(new Map(saveData.userGrid).entries()) : [],
+              checked_cells: saveData?.checkedCells ? Array.from(new Map(saveData.checkedCells).entries()) : [],
+              elapsed_seconds: meta.elapsedSeconds,
+              is_complete: meta.isComplete,
+              cells_filled: meta.cellsFilled,
+              total_cells: meta.totalCells,
+              completion_pct: meta.completionPercent,
+              puzzle_date: meta.date,
+            };
+          });
+          savesApi.bulkImport(savesToUpload)
+            .then(result => alert(`Uploaded ${result.imported} puzzle${result.imported !== 1 ? 's' : ''} to your account!`))
+            .catch(() => alert('Failed to upload saves. They are still saved locally.'));
+        }
+      }
+      clearNewUserFlag();
+    }
+  }, [isNewUser, isAuthenticated, clearNewUserFlag]);
 
   useEffect(() => {
     // Load a random puzzle on mount
@@ -139,6 +176,9 @@ function App() {
           {puzzle.author && <span className="author">By {puzzle.author}</span>}
         </div>
         <Timer />
+        <div className="auth-section">
+          {isAuthenticated ? <UserMenu /> : <GoogleSignIn />}
+        </div>
       </header>
 
       <div className="controls-container">
