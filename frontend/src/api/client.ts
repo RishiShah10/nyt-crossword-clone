@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type { PuzzleResponse } from '../types/puzzle';
 
-// API base URL - defaults to localhost backend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// API base URL - empty string = same origin (Vercel), fallback to localhost for dev
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

@@ -18,8 +18,8 @@ class Settings:
         "*"
     ).split(",")
 
-    # Cache settings
-    CACHE_DIR: str = os.getenv("CACHE_DIR", "./cache")
+    # Cache settings — /tmp is the only writable dir on Vercel serverless
+    CACHE_DIR: str = os.getenv("CACHE_DIR", "/tmp/cache")
 
     # GitHub repository
     GITHUB_REPO_URL: str = os.getenv(

@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -18,17 +19,19 @@ async def lifespan(app: FastAPI):
         await init_db()
     print(f"Cache directory: {settings.CACHE_DIR}")
 
-    # Pre-fetch recent puzzles on startup
-    cache_service = CacheService(cache_dir=settings.CACHE_DIR)
-    puzzle_service = PuzzleService(
-        cache_service=cache_service,
-        github_base_url=settings.GITHUB_REPO_URL
-    )
+    # Pre-fetch puzzles only when running as a long-lived server (not serverless)
+    is_serverless = os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+    if not is_serverless:
+        cache_service = CacheService(cache_dir=settings.CACHE_DIR)
+        puzzle_service = PuzzleService(
+            cache_service=cache_service,
+            github_base_url=settings.GITHUB_REPO_URL
+        )
 
-    try:
-        await puzzle_service.prefetch_recent_puzzles(days=7)
-    except Exception as e:
-        print(f"Error pre-fetching puzzles: {e}")
+        try:
+            await puzzle_service.prefetch_recent_puzzles(days=7)
+        except Exception as e:
+            print(f"Error pre-fetching puzzles: {e}")
 
     print("Backend ready!")
 
@@ -36,7 +39,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     print("Shutting down...")
-    await puzzle_service.close()
 
 
 # Create FastAPI app
