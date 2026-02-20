@@ -34,7 +34,19 @@ async def list_saves(
     return await service.list_saves(current_user["id"])
 
 
-@router.get("/{puzzle_id}")
+@router.post("/bulk")
+async def bulk_import(
+    data: BulkImportRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk import saves (for localStorage migration)."""
+    service = SavesService(db)
+    count = await service.bulk_import(current_user["id"], data.saves)
+    return {"imported": count}
+
+
+@router.get("/{puzzle_id:path}")
 async def get_save(
     puzzle_id: str,
     current_user: dict = Depends(get_current_user),
@@ -48,7 +60,7 @@ async def get_save(
     return save
 
 
-@router.put("/{puzzle_id}")
+@router.put("/{puzzle_id:path}")
 async def upsert_save(
     puzzle_id: str,
     data: SaveRequest,
@@ -60,7 +72,7 @@ async def upsert_save(
     return await service.upsert_save(current_user["id"], puzzle_id, data.model_dump())
 
 
-@router.delete("/{puzzle_id}")
+@router.delete("/{puzzle_id:path}")
 async def delete_save(
     puzzle_id: str,
     current_user: dict = Depends(get_current_user),
@@ -72,15 +84,3 @@ async def delete_save(
     if not deleted:
         raise HTTPException(status_code=404, detail="Save not found")
     return {"status": "deleted"}
-
-
-@router.post("/bulk")
-async def bulk_import(
-    data: BulkImportRequest,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Bulk import saves (for localStorage migration)."""
-    service = SavesService(db)
-    count = await service.bulk_import(current_user["id"], data.saves)
-    return {"imported": count}

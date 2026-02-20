@@ -19,17 +19,17 @@ export const savesApi = {
   },
 
   getSave: async (puzzleId: string) => {
-    const response = await apiClient.get(`/api/saves/${puzzleId}`);
+    const response = await apiClient.get(`/api/saves/${encodeURIComponent(puzzleId)}`);
     return response.data;
   },
 
   upsertSave: async (puzzleId: string, data: SaveRequestData) => {
-    const response = await apiClient.put(`/api/saves/${puzzleId}`, data);
+    const response = await apiClient.put(`/api/saves/${encodeURIComponent(puzzleId)}`, data);
     return response.data;
   },
 
   deleteSave: async (puzzleId: string) => {
-    const response = await apiClient.delete(`/api/saves/${puzzleId}`);
+    const response = await apiClient.delete(`/api/saves/${encodeURIComponent(puzzleId)}`);
     return response.data;
   },
 
