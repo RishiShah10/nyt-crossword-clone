@@ -11,7 +11,10 @@ class CacheService:
     def __init__(self, cache_dir: str = "./cache"):
         """Initialize cache service with specified directory."""
         self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass  # Read-only filesystem (e.g. Vercel serverless)
 
     def _get_cache_path(self, date: str) -> Path:
         """Get cache file path for a given date.
@@ -29,7 +32,10 @@ class CacheService:
             month = f"{date_obj.month:02d}"
             day = f"{date_obj.day:02d}"
             cache_path = self.cache_dir / str(year) / month
-            cache_path.mkdir(parents=True, exist_ok=True)
+            try:
+                cache_path.mkdir(parents=True, exist_ok=True)
+            except OSError:
+                pass
             return cache_path / f"{day}.json"
         except ValueError:
             # Fallback to flat structure if date parsing fails
