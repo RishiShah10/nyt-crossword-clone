@@ -1,15 +1,16 @@
-/* Clues Container - two-column layout for Across/Down */
+/* Clues Container - stacked vertically, each section gets half the height */
 .cluesContainer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 0;
   width: 100%;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
-/* Desktop: clues fill the same height as the grid */
+/* Desktop: clues match grid height exactly, split 50/50 */
 @media (min-width: 900px) {
   .cluesContainer {
     height: 100%;
@@ -17,9 +18,13 @@
     overflow: hidden;
   }
 
+  .cluesSection {
+    flex: 1;
+    min-height: 0;
+  }
+
   .cluesList {
-    /* On desktop, clue list scrolls within the grid height */
-    max-height: 100%;
+    max-height: none;
   }
 }
 
@@ -92,8 +97,8 @@
 .clueItem {
   display: flex;
   gap: 6px;
-  padding: 5px 4px;
-  border-bottom: none;
+  padding: 4px 6px;
+  border-bottom: 1px solid #f0f0f0;
   cursor: pointer;
   transition: background-color 0.1s ease;
   align-items: flex-start;
@@ -152,19 +157,22 @@
   color: #000000;
 }
 
-/* Responsive - Tablet */
+/* Responsive - Tablet (≤899px): side-by-side columns below grid */
 @media (max-width: 899px) {
   .cluesContainer {
+    flex-direction: row;
     gap: 16px;
     padding: 0;
     overflow: visible;
+    height: auto;
   }
 
   .cluesList {
-    max-height: 380px;
+    max-height: 35vh;
   }
 
   .cluesSection {
+    flex: 1;
     height: auto;
   }
 
@@ -178,10 +186,6 @@
     gap: 8px;
   }
 
-  .clueItemActive .clueNumber {
-    padding-left: 8px;
-  }
-
   .clueNumber {
     font-size: 0.85rem;
     min-width: 22px;
@@ -192,25 +196,19 @@
   }
 }
 
-/* Responsive - Mobile (Stack vertically) */
+/* Responsive - Mobile (≤640px) */
 @media (max-width: 640px) {
   .cluesContainer {
-    grid-template-columns: 1fr 1fr;
     gap: 12px;
-    padding: 0;
   }
 
   .cluesList {
-    max-height: 280px;
+    max-height: 30vh;
   }
 
   .clueItem {
     padding: 6px 4px;
     gap: 6px;
-  }
-
-  .clueItemActive .clueNumber {
-    padding-left: 6px;
   }
 
   .cluesHeading {
@@ -228,14 +226,14 @@
   }
 }
 
-/* Responsive - Small Mobile */
+/* Responsive - Small Mobile (≤480px) */
 @media (max-width: 480px) {
   .cluesContainer {
     gap: 10px;
   }
 
   .cluesList {
-    max-height: 240px;
+    max-height: 28vh;
   }
 
   .clueItem {
@@ -255,10 +253,5 @@
 
   .clueText {
     font-size: 0.72rem;
-  }
-
-  .clueItemActive {
-    border-left: none;
-    padding-left: 4px;
   }
 }

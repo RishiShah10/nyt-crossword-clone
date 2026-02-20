@@ -1,3 +1,9 @@
+/*
+ * The grid container has a FIXED size (--grid-size from App.css) so the
+ * puzzle area is always consistent regardless of how many cells there are.
+ * Cells use 1fr to subdivide the space — more cells = smaller cells.
+ */
+
 /* Grid Container */
 .gridContainer {
   display: flex;
@@ -6,13 +12,15 @@
   padding: 0;
   background: #ffffff;
   flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .grid {
   display: grid;
   gap: 0;
   border: 2px solid #000000;
-  width: fit-content;
+  width: var(--grid-size, 600px);
+  height: var(--grid-size, 600px);
   background: #000000;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   border-radius: 2px;
@@ -26,12 +34,11 @@
   font-weight: 500;
 }
 
-/* Cell Styles - 46px cells for a comfortable desktop size */
+/* Cell Styles — sized by grid's 1fr, no fixed dimensions needed */
 .cell {
   position: relative;
-  width: 46px;
-  height: 46px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .cellBlack {
@@ -124,12 +131,12 @@
   background: #e8e8e8;
 }
 
-/* Cell Number */
+/* Cell Number — positioned and sized relative to cell */
 .cellNumber {
   position: absolute;
-  top: 3px;
-  left: 4px;
-  font-size: 9px;
+  top: 5%;
+  left: 7%;
+  font-size: clamp(6px, calc(var(--grid-size, 600px) / 75), 11px);
   font-weight: 700;
   line-height: 1;
   pointer-events: none;
@@ -138,7 +145,7 @@
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* Cell Input */
+/* Cell Input — font scales with grid container size */
 .cellInput {
   position: absolute;
   top: 0;
@@ -148,7 +155,7 @@
   border: none;
   background: transparent;
   text-align: center;
-  font-size: 24px;
+  font-size: clamp(10px, calc(var(--grid-size, 600px) / 30), 26px);
   font-weight: 700;
   font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   text-transform: uppercase;
@@ -172,30 +179,15 @@
   border-radius: 2px;
 }
 
-/* Responsive - Tablet */
+/* Responsive - Tablet (≤899px): centre the grid, adjust box shadow */
 @media (max-width: 899px) {
   .gridContainer {
     justify-content: center;
     align-items: center;
   }
-
-  .cell {
-    width: 44px;
-    height: 44px;
-  }
-
-  .cellInput {
-    font-size: 23px;
-  }
-
-  .cellNumber {
-    font-size: 9px;
-    top: 3px;
-    left: 3px;
-  }
 }
 
-/* Responsive - Mobile */
+/* Responsive - Mobile (≤640px) */
 @media (max-width: 640px) {
   .gridContainer {
     justify-content: center;
@@ -205,53 +197,9 @@
   .grid {
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
   }
-
-  .cell {
-    width: 38px;
-    height: 38px;
-  }
-
-  .cellInput {
-    font-size: 20px;
-  }
-
-  .cellNumber {
-    font-size: 8px;
-    top: 2px;
-    left: 2px;
-  }
 }
 
-/* Responsive - Small Mobile */
-@media (max-width: 480px) {
-  .cell {
-    width: 32px;
-    height: 32px;
-  }
-
-  .cellInput {
-    font-size: 17px;
-  }
-
-  .cellNumber {
-    font-size: 7px;
-    top: 1px;
-    left: 1px;
-  }
-}
-
-/* Extra Small Screens */
-@media (max-width: 380px) {
-  .cell {
-    width: 27px;
-    height: 27px;
-  }
-
-  .cellInput {
-    font-size: 14px;
-  }
-
-  .cellNumber {
-    font-size: 6px;
-  }
-}
+/*
+ * Grid container size on all breakpoints is driven by --grid-size set in App.css.
+ * Cells use 1fr to subdivide the space automatically.
+ */

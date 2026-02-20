@@ -4,7 +4,6 @@ import { puzzleApi } from './api/client';
 import Grid from './components/Grid/Grid';
 import ClueList from './components/Clues/ClueList';
 import Timer from './components/Header/Timer';
-import PuzzleSelector from './components/Header/PuzzleSelector';
 import ActionButtons from './components/Header/ActionButtons';
 import CurrentClue from './components/Header/CurrentClue';
 import PuzzleLibrary from './components/Library/PuzzleLibrary';
@@ -122,7 +121,6 @@ function App() {
       </header>
 
       <div className="controls-container">
-        <PuzzleSelector />
         <ActionButtons onOpenLibrary={() => setShowLibrary(true)} />
       </div>
 
