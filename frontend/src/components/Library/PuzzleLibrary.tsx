@@ -87,9 +87,15 @@ const PuzzleLibrary: React.FC<PuzzleLibraryProps> = ({ isOpen, onClose, onSelect
   };
 
   const handleCleanup = () => {
-    const count = SavesManager.cleanupOldSaves(30);
-    alert(`Cleaned up ${count} old save${count !== 1 ? 's' : ''}`);
-    loadSaves();
+    if (saves.length === 0) {
+      alert('No saves to delete.');
+      return;
+    }
+
+    if (confirm(`Delete all ${saves.length} saved puzzle${saves.length !== 1 ? 's' : ''}? This cannot be undone.`)) {
+      saves.forEach(s => SavesManager.deleteSave(s.puzzleId));
+      loadSaves();
+    }
   };
 
   const getFilteredSaves = (): SaveMetadata[] => {
