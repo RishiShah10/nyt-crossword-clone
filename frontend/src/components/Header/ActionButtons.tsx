@@ -30,8 +30,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
   const { state, dispatch } = usePuzzle();
   const [showSaved, setShowSaved] = useState(false);
   const [showRevealMenu, setShowRevealMenu] = useState(false);
+  const [showCheckMenu, setShowCheckMenu] = useState(false);
   const [modal, setModal] = useState<ModalState>(MODAL_CLOSED);
   const revealMenuRef = useRef<HTMLDivElement>(null);
+  const checkMenuRef = useRef<HTMLDivElement>(null);
 
   const closeModal = () => setModal(MODAL_CLOSED);
 
@@ -43,29 +45,98 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
     setModal({ isOpen: true, title, message, variant: 'warning', onConfirm, confirmLabel });
   };
 
-  // Close reveal menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (revealMenuRef.current && !revealMenuRef.current.contains(event.target as Node)) {
         setShowRevealMenu(false);
       }
+      if (checkMenuRef.current && !checkMenuRef.current.contains(event.target as Node)) {
+        setShowCheckMenu(false);
+      }
     };
 
-    if (showRevealMenu) {
+    if (showRevealMenu || showCheckMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showRevealMenu]);
+  }, [showRevealMenu, showCheckMenu]);
 
   if (!state.puzzle) return null;
 
-  const handleCheck = () => {
+  // --- Check handlers ---
+
+  const handleCheckCell = () => {
+    if (!state.selection) {
+      showInfo('No Cell Selected', 'Please select a cell first.');
+      return;
+    }
+
+    const { row, col } = state.selection;
+    const correctLetter = getCorrectLetter(state.puzzle!, row, col);
+    const userLetter = state.userGrid.get(`${row},${col}`) || '';
+
+    if (!userLetter) {
+      showInfo('Empty Cell', 'This cell is empty. Fill in a letter first.');
+      return;
+    }
+
+    const isCorrect = userLetter === correctLetter;
+    dispatch({
+      type: 'CHECK_CELL',
+      payload: { row, col, isCorrect },
+    });
+
+    if (isCorrect) {
+      showInfo('Correct!', 'This letter is correct.');
+    } else {
+      showInfo('Incorrect', 'This letter is incorrect. It has been marked in red.');
+    }
+  };
+
+  const handleCheckWord = () => {
+    if (!state.selection || !state.grid || !state.clueMap) {
+      showInfo('No Cell Selected', 'Please select a cell first.');
+      return;
+    }
+
+    const { row, col, direction } = state.selection;
+    const clueKey = getClueKeyForCell(state.grid, row, col, direction, state.clueMap);
+
+    if (!clueKey) {
+      showInfo('No Word Found', 'No word found at current position.');
+      return;
+    }
+
+    const cells = getCellsForClue(clueKey, state.clueMap);
+    let incorrectCount = 0;
+
+    cells.forEach(cell => {
+      const correctLetter = getCorrectLetter(state.puzzle!, cell.row, cell.col);
+      const userLetter = state.userGrid.get(`${cell.row},${cell.col}`) || '';
+      if (userLetter) {
+        const isCorrect = userLetter === correctLetter;
+        dispatch({
+          type: 'CHECK_CELL',
+          payload: { row: cell.row, col: cell.col, isCorrect },
+        });
+        if (!isCorrect) incorrectCount++;
+      }
+    });
+
+    if (incorrectCount === 0) {
+      showInfo('Word Correct!', 'All filled letters in this word are correct.');
+    } else {
+      showInfo('Check Results', `${incorrectCount} letter${incorrectCount !== 1 ? 's are' : ' is'} incorrect in this word.`);
+    }
+  };
+
+  const handleCheckPuzzle = () => {
     const result = validatePuzzle(state.puzzle!, state.userGrid);
 
-    // Mark incorrect cells
     result.incorrectCells.forEach(cellKey => {
       dispatch({
         type: 'CHECK_CELL',
@@ -77,7 +148,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
       });
     });
 
-    // Update completion status
     if (result.isAllCorrect) {
       dispatch({ type: 'SET_COMPLETE', payload: true });
       showInfo('Puzzle Complete!', 'Congratulations! All answers are correct!');
@@ -87,6 +157,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
       showInfo('Looking Good!', 'All filled cells are correct. Keep going!');
     }
   };
+
+  // --- Reveal handlers ---
 
   const handleRevealCell = () => {
     if (!state.selection) {
@@ -166,6 +238,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
     );
   };
 
+  // --- Other handlers ---
+
   const handleReset = () => {
     showConfirmModal(
       'Reset Puzzle',
@@ -205,19 +279,52 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
   return (
     <>
       <div className="action-buttons" role="toolbar" aria-label="Puzzle actions">
-        <button
-          className="btn btn-check"
-          onClick={handleCheck}
-          title="Check your answers"
-          aria-label="Check puzzle answers"
-        >
-          ✓ Check
-        </button>
+        <div className="reveal-dropdown" ref={checkMenuRef}>
+          <button
+            className="btn btn-check"
+            onClick={() => { setShowCheckMenu(!showCheckMenu); setShowRevealMenu(false); }}
+            title="Check options"
+            aria-label="Check options menu"
+          >
+            ✓ Check ▾
+          </button>
+          {showCheckMenu && (
+            <div className="reveal-menu">
+              <button
+                className="reveal-menu-item"
+                onClick={() => {
+                  handleCheckCell();
+                  setShowCheckMenu(false);
+                }}
+              >
+                Check Cell
+              </button>
+              <button
+                className="reveal-menu-item"
+                onClick={() => {
+                  handleCheckWord();
+                  setShowCheckMenu(false);
+                }}
+              >
+                Check Word
+              </button>
+              <button
+                className="reveal-menu-item"
+                onClick={() => {
+                  handleCheckPuzzle();
+                  setShowCheckMenu(false);
+                }}
+              >
+                Check Puzzle
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="reveal-dropdown" ref={revealMenuRef}>
           <button
             className="btn btn-reveal"
-            onClick={() => setShowRevealMenu(!showRevealMenu)}
+            onClick={() => { setShowRevealMenu(!showRevealMenu); setShowCheckMenu(false); }}
             title="Reveal options"
             aria-label="Reveal options menu"
           >
@@ -232,7 +339,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
                   setShowRevealMenu(false);
                 }}
               >
-                💡 Reveal Cell
+                Reveal Cell
               </button>
               <button
                 className="reveal-menu-item"
@@ -241,7 +348,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
                   setShowRevealMenu(false);
                 }}
               >
-                📝 Reveal Word
+                Reveal Word
               </button>
               <button
                 className="reveal-menu-item"
@@ -250,7 +357,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
                   setShowRevealMenu(false);
                 }}
               >
-                🔓 Reveal Puzzle
+                Reveal Puzzle
               </button>
             </div>
           )}
