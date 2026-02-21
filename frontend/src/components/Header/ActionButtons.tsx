@@ -211,7 +211,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
           title="Check your answers"
           aria-label="Check puzzle answers"
         >
-          Check
+          ✓ Check
         </button>
 
         <div className="reveal-dropdown" ref={revealMenuRef}>
@@ -221,7 +221,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
             title="Reveal options"
             aria-label="Reveal options menu"
           >
-            Reveal ▾
+            💡 Reveal ▾
           </button>
           {showRevealMenu && (
             <div className="reveal-menu">
@@ -232,7 +232,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
                   setShowRevealMenu(false);
                 }}
               >
-                Reveal Cell
+                💡 Reveal Cell
               </button>
               <button
                 className="reveal-menu-item"
@@ -241,7 +241,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
                   setShowRevealMenu(false);
                 }}
               >
-                Reveal Word
+                📝 Reveal Word
               </button>
               <button
                 className="reveal-menu-item"
@@ -250,7 +250,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
                   setShowRevealMenu(false);
                 }}
               >
-                Reveal Puzzle
+                🔓 Reveal Puzzle
               </button>
             </div>
           )}
@@ -273,7 +273,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
           title="Save puzzle progress"
           aria-label="Save puzzle progress"
         >
-          {showSaved ? 'Saved!' : 'Save'}
+          {showSaved ? '✓ Saved!' : '💾 Save'}
         </button>
 
         <button
@@ -282,7 +282,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
           title={state.isPaused ? 'Resume timer' : 'Pause timer'}
           aria-label={state.isPaused ? 'Resume timer' : 'Pause timer'}
         >
-          {state.isPaused ? 'Resume' : 'Pause'}
+          {state.isPaused ? '▶️ Resume' : '⏸️ Pause'}
         </button>
 
         {onOpenLibrary && (
@@ -292,7 +292,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
             title="Open puzzle library"
             aria-label="Open puzzle library"
           >
-            Library
+            📚 Library
           </button>
         )}
 
@@ -303,7 +303,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
             title="Load a random puzzle"
             aria-label="Load a random puzzle"
           >
-            Random
+            🎲 Random
           </button>
         )}
 
@@ -313,7 +313,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
           title="Reset puzzle"
           aria-label="Reset puzzle to start"
         >
-          Reset
+          ↻ Reset
         </button>
       </div>
 
