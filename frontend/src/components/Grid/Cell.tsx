@@ -8,6 +8,7 @@ interface CellProps {
   isSelected: boolean;
   isHighlighted: boolean;
   isIncorrect: boolean;
+  isCorrect: boolean;
   onClick: () => void;
   onChange: (value: string) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
@@ -19,6 +20,7 @@ const Cell: React.FC<CellProps> = ({
   isSelected,
   isHighlighted,
   isIncorrect,
+  isCorrect,
   onClick,
   onChange,
   onKeyDown,
@@ -42,6 +44,7 @@ const Cell: React.FC<CellProps> = ({
     isSelected && styles.cellSelected,
     isHighlighted && styles.cellHighlighted,
     isIncorrect && styles.cellIncorrect,
+    isCorrect && styles.cellCorrect,
     cell.isCircled && styles.cellCircled,
     cell.isShaded && styles.cellShaded,
   ]
@@ -67,6 +70,7 @@ const Cell: React.FC<CellProps> = ({
         aria-invalid={isIncorrect}
       />
       {isIncorrect && <div className={styles.cellIncorrectMark} aria-hidden="true" />}
+      {isCorrect && <div className={styles.cellCorrectMark} aria-hidden="true" />}
     </div>
   );
 };

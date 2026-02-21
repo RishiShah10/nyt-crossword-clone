@@ -75,10 +75,6 @@
 }
 
 /* Incorrect Cell */
-.cellIncorrect {
-  background: #fff0f0 !important;
-}
-
 .cellIncorrect .cellInput {
   color: #d32f2f !important;
 }
@@ -92,6 +88,24 @@
   border-style: solid;
   border-width: 0 10px 10px 0;
   border-color: transparent #d32f2f transparent transparent;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Correct Cell */
+.cellCorrect .cellInput {
+  color: #2e7d32 !important;
+}
+
+.cellCorrectMark {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 10px 10px 0;
+  border-color: transparent #2e7d32 transparent transparent;
   pointer-events: none;
   z-index: 3;
 }

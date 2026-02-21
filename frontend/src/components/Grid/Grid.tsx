@@ -88,6 +88,7 @@ const Grid: React.FC = () => {
             const isSelected = selection?.row === rowIndex && selection?.col === colIndex;
             const isHighlighted = state.highlightedCells.has(cellKey);
             const isIncorrect = checkedCells.get(cellKey) === false;
+            const isCorrect = checkedCells.get(cellKey) === true;
 
             return (
               <Cell
@@ -97,6 +98,7 @@ const Grid: React.FC = () => {
                 isSelected={isSelected}
                 isHighlighted={isHighlighted}
                 isIncorrect={isIncorrect}
+                isCorrect={isCorrect}
                 onClick={() => handleCellClick(rowIndex, colIndex)}
                 onChange={(val) => handleCellChange(rowIndex, colIndex, val)}
                 onKeyDown={(e) => handleKeyDown(rowIndex, colIndex, e)}
