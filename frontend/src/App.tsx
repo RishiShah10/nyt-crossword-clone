@@ -12,6 +12,7 @@ import GoogleSignIn from './components/Auth/GoogleSignIn';
 import UserMenu from './components/Auth/UserMenu';
 import SavesManager from './utils/savesManager';
 import { savesApi } from './api/savesApi';
+import Confetti from './components/Confetti';
 import './App.css';
 
 function App() {
@@ -192,11 +193,7 @@ function App() {
         <ClueList />
       </main>
 
-      {state.isComplete && (
-        <div className="completion-banner">
-          🎉 Puzzle Complete! Great job! 🎉
-        </div>
-      )}
+      <Confetti show={state.isComplete} />
 
       <PuzzleLibrary
         isOpen={showLibrary}
