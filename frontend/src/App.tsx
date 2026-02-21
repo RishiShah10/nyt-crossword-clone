@@ -174,7 +174,7 @@ function App() {
           {puzzle.date && <h2>{puzzle.date}</h2>}
         </div>
         <div className="puzzle-meta">
-          <span className="author">By Rishi Shah</span>
+{puzzle.author && <span className="author">By {puzzle.author}</span>}
         </div>
         <Timer />
         <div className="auth-section">
