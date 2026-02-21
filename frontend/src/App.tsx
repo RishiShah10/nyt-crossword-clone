@@ -170,7 +170,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <h1>The Crossword</h1>
+          <h1>Rishi's Crossword</h1>
           {puzzle.date && <h2>{puzzle.date}</h2>}
         </div>
         <div className="puzzle-meta">
