@@ -170,11 +170,11 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <h1>The Mini Crossword</h1>
+          <h1>Crossword Central</h1>
           {puzzle.date && <h2>{puzzle.date}</h2>}
         </div>
         <div className="puzzle-meta">
-          {puzzle.author && <span className="author">By {puzzle.author}</span>}
+          <span className="author">By Rishi Shah</span>
         </div>
         <Timer />
         <div className="auth-section">
