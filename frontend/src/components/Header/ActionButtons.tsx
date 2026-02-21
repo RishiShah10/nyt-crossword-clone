@@ -3,18 +3,45 @@ import { usePuzzle } from '../../context/PuzzleContext';
 import { validatePuzzle, revealAllAnswers, getCorrectLetter } from '../../utils/validationUtils';
 import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
 import SavesManager from '../../utils/savesManager';
+import Modal from './Modal';
 
 interface ActionButtonsProps {
   onOpenLibrary?: () => void;
   onLoadRandom?: () => void;
 }
 
+interface ModalState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  variant: 'info' | 'warning';
+  onConfirm?: () => void;
+  confirmLabel?: string;
+}
+
+const MODAL_CLOSED: ModalState = {
+  isOpen: false,
+  title: '',
+  message: '',
+  variant: 'info',
+};
+
 const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRandom }) => {
   const { state, dispatch } = usePuzzle();
-  const [showConfirm, setShowConfirm] = useState<'reveal' | null>(null);
   const [showSaved, setShowSaved] = useState(false);
   const [showRevealMenu, setShowRevealMenu] = useState(false);
+  const [modal, setModal] = useState<ModalState>(MODAL_CLOSED);
   const revealMenuRef = useRef<HTMLDivElement>(null);
+
+  const closeModal = () => setModal(MODAL_CLOSED);
+
+  const showInfo = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message, variant: 'info' });
+  };
+
+  const showConfirmModal = (title: string, message: string, onConfirm: () => void, confirmLabel = 'Confirm') => {
+    setModal({ isOpen: true, title, message, variant: 'warning', onConfirm, confirmLabel });
+  };
 
   // Close reveal menu when clicking outside
   useEffect(() => {
@@ -53,17 +80,17 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
     // Update completion status
     if (result.isAllCorrect) {
       dispatch({ type: 'SET_COMPLETE', payload: true });
-      alert('Congratulations! Puzzle complete! 🎉');
+      showInfo('Puzzle Complete!', 'Congratulations! All answers are correct!');
     } else if (result.incorrectCells.size > 0) {
-      alert(`${result.incorrectCells.size} cell(s) are incorrect. They are marked in red.`);
+      showInfo('Check Results', `${result.incorrectCells.size} cell${result.incorrectCells.size !== 1 ? 's are' : ' is'} incorrect. They are marked in red.`);
     } else {
-      alert('All filled cells are correct! Keep going!');
+      showInfo('Looking Good!', 'All filled cells are correct. Keep going!');
     }
   };
 
   const handleRevealCell = () => {
     if (!state.selection) {
-      alert('Please select a cell first.');
+      showInfo('No Cell Selected', 'Please select a cell first.');
       return;
     }
 
@@ -75,7 +102,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
       payload: { row, col, value: correctLetter },
     });
 
-    // Clear any incorrect marking
     dispatch({
       type: 'CHECK_CELL',
       payload: { row, col, isCorrect: true },
@@ -84,71 +110,73 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
 
   const handleRevealWord = () => {
     if (!state.selection || !state.grid || !state.clueMap) {
-      alert('Please select a cell first.');
+      showInfo('No Cell Selected', 'Please select a cell first.');
       return;
     }
 
     const { row, col, direction } = state.selection;
-
-    // Get the clue key for the current word
     const clueKey = getClueKeyForCell(state.grid, row, col, direction, state.clueMap);
 
     if (!clueKey) {
-      alert('No word found at current position.');
+      showInfo('No Word Found', 'No word found at current position.');
       return;
     }
 
-    // Get all cells in the current word
     const cells = getCellsForClue(clueKey, state.clueMap);
 
-    // Reveal all letters in the word
-    cells.forEach(cell => {
-      const correctLetter = getCorrectLetter(state.puzzle!, cell.row, cell.col);
-      dispatch({
-        type: 'SET_CELL_VALUE',
-        payload: { row: cell.row, col: cell.col, value: correctLetter },
-      });
-
-      // Clear any incorrect marking
-      dispatch({
-        type: 'CHECK_CELL',
-        payload: { row: cell.row, col: cell.col, isCorrect: true },
-      });
-    });
-
-    alert(`Word revealed! (${cells.length} letters)`);
+    showConfirmModal(
+      'Reveal Word',
+      `Reveal all ${cells.length} letters in this word?`,
+      () => {
+        cells.forEach(cell => {
+          const correctLetter = getCorrectLetter(state.puzzle!, cell.row, cell.col);
+          dispatch({
+            type: 'SET_CELL_VALUE',
+            payload: { row: cell.row, col: cell.col, value: correctLetter },
+          });
+          dispatch({
+            type: 'CHECK_CELL',
+            payload: { row: cell.row, col: cell.col, isCorrect: true },
+          });
+        });
+        closeModal();
+      },
+      'Reveal'
+    );
   };
 
   const handleRevealPuzzle = () => {
-    if (showConfirm === 'reveal') {
-      const revealedGrid = revealAllAnswers(state.puzzle!);
-
-      // Set all cells
-      revealedGrid.forEach((letter, cellKey) => {
-        const [row, col] = cellKey.split(',').map(Number);
-        dispatch({
-          type: 'SET_CELL_VALUE',
-          payload: { row, col, value: letter },
+    showConfirmModal(
+      'Reveal Entire Puzzle',
+      'Are you sure? This will reveal all answers and mark the puzzle as complete. This cannot be undone.',
+      () => {
+        const revealedGrid = revealAllAnswers(state.puzzle!);
+        revealedGrid.forEach((letter, cellKey) => {
+          const [r, c] = cellKey.split(',').map(Number);
+          dispatch({
+            type: 'SET_CELL_VALUE',
+            payload: { row: r, col: c, value: letter },
+          });
         });
-      });
-
-      // Clear all checks
-      dispatch({ type: 'CLEAR_CHECKS' });
-      dispatch({ type: 'SET_COMPLETE', payload: true });
-      setShowConfirm(null);
-      alert('Puzzle revealed!');
-    } else {
-      setShowConfirm('reveal');
-      setTimeout(() => setShowConfirm(null), 3000);
-    }
+        dispatch({ type: 'CLEAR_CHECKS' });
+        dispatch({ type: 'SET_COMPLETE', payload: true });
+        closeModal();
+      },
+      'Reveal Puzzle'
+    );
   };
 
   const handleReset = () => {
-    if (confirm('Are you sure you want to reset the puzzle?')) {
-      dispatch({ type: 'CLEAR_GRID' });
-      dispatch({ type: 'RESET_TIMER' });
-      alert('Puzzle reset!');
-    }
+    showConfirmModal(
+      'Reset Puzzle',
+      'Are you sure you want to reset the puzzle? All your progress will be lost.',
+      () => {
+        dispatch({ type: 'CLEAR_GRID' });
+        dispatch({ type: 'RESET_TIMER' });
+        closeModal();
+      },
+      'Reset'
+    );
   };
 
   const handleClearChecks = () => {
@@ -175,120 +203,130 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
   };
 
   return (
-    <div className="action-buttons" role="toolbar" aria-label="Puzzle actions">
-      <button
-        className="btn btn-check"
-        onClick={handleCheck}
-        title="Check your answers"
-        aria-label="Check puzzle answers"
-      >
-        ✓ Check
-      </button>
-
-      <div className="reveal-dropdown" ref={revealMenuRef}>
+    <>
+      <div className="action-buttons" role="toolbar" aria-label="Puzzle actions">
         <button
-          className="btn btn-reveal"
-          onClick={() => setShowRevealMenu(!showRevealMenu)}
-          title="Reveal options"
-          aria-label="Reveal options menu"
+          className="btn btn-check"
+          onClick={handleCheck}
+          title="Check your answers"
+          aria-label="Check puzzle answers"
         >
-          💡 Reveal ▾
+          Check
         </button>
-        {showRevealMenu && (
-          <div className="reveal-menu">
-            <button
-              className="reveal-menu-item"
-              onClick={() => {
-                handleRevealCell();
-                setShowRevealMenu(false);
-              }}
-            >
-              💡 Reveal Cell
-            </button>
-            <button
-              className="reveal-menu-item"
-              onClick={() => {
-                handleRevealWord();
-                setShowRevealMenu(false);
-              }}
-            >
-              📝 Reveal Word
-            </button>
-            <button
-              className={`reveal-menu-item ${showConfirm === 'reveal' ? 'reveal-confirm' : ''}`}
-              onClick={() => {
-                handleRevealPuzzle();
-                if (showConfirm !== 'reveal') {
+
+        <div className="reveal-dropdown" ref={revealMenuRef}>
+          <button
+            className="btn btn-reveal"
+            onClick={() => setShowRevealMenu(!showRevealMenu)}
+            title="Reveal options"
+            aria-label="Reveal options menu"
+          >
+            Reveal ▾
+          </button>
+          {showRevealMenu && (
+            <div className="reveal-menu">
+              <button
+                className="reveal-menu-item"
+                onClick={() => {
+                  handleRevealCell();
                   setShowRevealMenu(false);
-                }
-              }}
-            >
-              {showConfirm === 'reveal' ? '⚠️ Confirm?' : '🔓 Reveal Puzzle'}
-            </button>
-          </div>
+                }}
+              >
+                Reveal Cell
+              </button>
+              <button
+                className="reveal-menu-item"
+                onClick={() => {
+                  handleRevealWord();
+                  setShowRevealMenu(false);
+                }}
+              >
+                Reveal Word
+              </button>
+              <button
+                className="reveal-menu-item"
+                onClick={() => {
+                  handleRevealPuzzle();
+                  setShowRevealMenu(false);
+                }}
+              >
+                Reveal Puzzle
+              </button>
+            </div>
+          )}
+        </div>
+
+        {state.checkedCells.size > 0 && (
+          <button
+            className="btn btn-clear"
+            onClick={handleClearChecks}
+            title="Clear error marks"
+            aria-label="Clear incorrect cell marks"
+          >
+            Clear Marks
+          </button>
         )}
+
+        <button
+          className={`btn btn-save ${showSaved ? 'btn-saved' : ''}`}
+          onClick={handleSave}
+          title="Save puzzle progress"
+          aria-label="Save puzzle progress"
+        >
+          {showSaved ? 'Saved!' : 'Save'}
+        </button>
+
+        <button
+          className={`btn btn-pause ${state.isPaused ? 'btn-paused' : ''}`}
+          onClick={handleTogglePause}
+          title={state.isPaused ? 'Resume timer' : 'Pause timer'}
+          aria-label={state.isPaused ? 'Resume timer' : 'Pause timer'}
+        >
+          {state.isPaused ? 'Resume' : 'Pause'}
+        </button>
+
+        {onOpenLibrary && (
+          <button
+            className="btn btn-library"
+            onClick={onOpenLibrary}
+            title="Open puzzle library"
+            aria-label="Open puzzle library"
+          >
+            Library
+          </button>
+        )}
+
+        {onLoadRandom && (
+          <button
+            className="btn btn-library"
+            onClick={onLoadRandom}
+            title="Load a random puzzle"
+            aria-label="Load a random puzzle"
+          >
+            Random
+          </button>
+        )}
+
+        <button
+          className="btn btn-reset"
+          onClick={handleReset}
+          title="Reset puzzle"
+          aria-label="Reset puzzle to start"
+        >
+          Reset
+        </button>
       </div>
 
-      {state.checkedCells.size > 0 && (
-        <button
-          className="btn btn-clear"
-          onClick={handleClearChecks}
-          title="Clear error marks"
-          aria-label="Clear incorrect cell marks"
-        >
-          Clear Marks
-        </button>
-      )}
-
-      <button
-        className={`btn btn-save ${showSaved ? 'btn-saved' : ''}`}
-        onClick={handleSave}
-        title="Save puzzle progress"
-        aria-label="Save puzzle progress"
-      >
-        {showSaved ? '✓ Saved!' : '💾 Save'}
-      </button>
-
-      <button
-        className={`btn btn-pause ${state.isPaused ? 'btn-paused' : ''}`}
-        onClick={handleTogglePause}
-        title={state.isPaused ? 'Resume timer' : 'Pause timer'}
-        aria-label={state.isPaused ? 'Resume timer' : 'Pause timer'}
-      >
-        {state.isPaused ? '▶️ Resume' : '⏸️ Pause'}
-      </button>
-
-      {onOpenLibrary && (
-        <button
-          className="btn btn-library"
-          onClick={onOpenLibrary}
-          title="Open puzzle library"
-          aria-label="Open puzzle library"
-        >
-          📚 Library
-        </button>
-      )}
-
-      {onLoadRandom && (
-        <button
-          className="btn btn-library"
-          onClick={onLoadRandom}
-          title="Load a random puzzle"
-          aria-label="Load a random puzzle"
-        >
-          🎲 Random
-        </button>
-      )}
-
-      <button
-        className="btn btn-reset"
-        onClick={handleReset}
-        title="Reset puzzle"
-        aria-label="Reset puzzle to start"
-      >
-        ↻ Reset
-      </button>
-    </div>
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        variant={modal.variant}
+        onConfirm={modal.onConfirm}
+        confirmLabel={modal.confirmLabel}
+        onClose={closeModal}
+      />
+    </>
   );
 };
 
