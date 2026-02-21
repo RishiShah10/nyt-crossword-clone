@@ -52,7 +52,7 @@ const ClueItem: React.FC<ClueItemProps> = ({ clue, isActive, onClick, onArrowUp,
       onKeyDown={handleKeyDown}
     >
       <span className={styles.clueNumber} aria-hidden="true">{clue.number}.</span>
-      <span className={styles.clueText}>{clue.clue}</span>
+      <span className={styles.clueText}>{clue.clue.replace(/^\d+\.\s*/, '')}</span>
     </li>
   );
 };
