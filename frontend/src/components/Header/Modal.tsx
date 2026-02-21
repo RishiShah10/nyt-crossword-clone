@@ -40,7 +40,7 @@ const Modal: React.FC<ModalProps> = ({
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={{
           ...styles.header,
-          borderBottomColor: variant === 'warning' ? '#ff9800' : '#2196f3',
+          borderBottomColor: variant === 'warning' ? '#000' : '#000',
         }}>
           {title}
         </div>
@@ -51,13 +51,7 @@ const Modal: React.FC<ModalProps> = ({
               <button style={styles.cancelBtn} onClick={onClose}>
                 {cancelLabel}
               </button>
-              <button
-                style={{
-                  ...styles.confirmBtn,
-                  background: variant === 'warning' ? '#d32f2f' : '#2196f3',
-                }}
-                onClick={onConfirm}
-              >
+              <button style={styles.confirmBtn} onClick={onConfirm}>
                 {confirmLabel}
               </button>
             </>
@@ -76,60 +70,68 @@ const styles: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(0,0,0,0.4)',
+    background: 'rgba(0,0,0,0.35)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2000,
-    animation: 'fadeIn 0.15s ease-out',
   },
   modal: {
-    background: '#fff',
-    borderRadius: '12px',
-    boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
-    minWidth: '300px',
+    background: '#ffffff',
+    borderRadius: '4px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
+    minWidth: '320px',
     maxWidth: '400px',
     overflow: 'hidden',
+    border: '1px solid #e0e0e0',
   },
   header: {
-    padding: '16px 20px',
-    fontSize: '1rem',
+    padding: '18px 24px 14px',
+    fontSize: '1.05rem',
     fontWeight: 700,
-    borderBottom: '3px solid #2196f3',
+    color: '#000000',
+    borderBottom: '2px solid #000000',
     fontFamily: "'Libre Baskerville', Georgia, serif",
+    letterSpacing: '-0.3px',
   },
   body: {
-    padding: '20px',
+    padding: '20px 24px',
     fontSize: '0.9rem',
-    lineHeight: 1.5,
-    color: '#333',
+    lineHeight: 1.6,
+    color: '#333333',
+    fontFamily: "'Open Sans', sans-serif",
   },
   footer: {
-    padding: '12px 20px',
+    padding: '14px 24px',
     display: 'flex',
     justifyContent: 'flex-end',
     gap: '10px',
-    borderTop: '1px solid #eee',
+    borderTop: '1px solid #e0e0e0',
+    background: '#f8f8f8',
   },
   cancelBtn: {
-    padding: '8px 18px',
-    fontSize: '0.85rem',
+    padding: '8px 20px',
+    fontSize: '0.8rem',
     fontWeight: 500,
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    background: '#fff',
-    color: '#333',
+    border: '1px solid #cccccc',
+    borderRadius: '4px',
+    background: '#ffffff',
+    color: '#000000',
     cursor: 'pointer',
+    fontFamily: "'Open Sans', sans-serif",
+    letterSpacing: '0',
   },
   confirmBtn: {
-    padding: '8px 18px',
-    fontSize: '0.85rem',
+    padding: '8px 20px',
+    fontSize: '0.8rem',
     fontWeight: 600,
-    border: 'none',
-    borderRadius: '6px',
-    background: '#2196f3',
-    color: '#fff',
+    border: '1px solid #000000',
+    borderRadius: '4px',
+    background: '#000000',
+    color: '#ffffff',
     cursor: 'pointer',
+    fontFamily: "'Open Sans', sans-serif",
+    letterSpacing: '0',
   },
 };
 
