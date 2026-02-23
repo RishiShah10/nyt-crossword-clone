@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { usePuzzle } from '../../context/PuzzleContext';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { useRoom } from '../../context/RoomContext';
+import { useAuth } from '../../context/AuthContext';
 import Cell from './Cell';
 import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
 import styles from './Grid.module.css';
@@ -26,6 +27,7 @@ const SELECTED_COLORS: Record<string, string> = {
 const Grid: React.FC = () => {
   const { state, dispatch } = usePuzzle();
   const { presenceList, isInRoom } = useRoom();
+  const { user } = useAuth();
   useKeyboard(); // Enable keyboard navigation
 
   if (!state.grid || !state.clueMap) {
@@ -34,11 +36,17 @@ const Grid: React.FC = () => {
 
   const { grid, selection, userGrid, clueMap, checkedCells } = state;
 
+  // Filter out local user from presence list
+  const remotePresence = useMemo(() => {
+    if (!isInRoom || !user) return [];
+    return presenceList.filter(p => p.userId !== user.id);
+  }, [presenceList, isInRoom, user]);
+
   // Build a map of cellKey -> remote cursors for this cell
   const remoteCursorMap = useMemo(() => {
     if (!isInRoom) return new Map<string, RoomPresence[]>();
     const map = new Map<string, RoomPresence[]>();
-    for (const p of presenceList) {
+    for (const p of remotePresence) {
       if (p.selection) {
         const key = `${p.selection.row},${p.selection.col}`;
         const existing = map.get(key) || [];
@@ -47,14 +55,14 @@ const Grid: React.FC = () => {
       }
     }
     return map;
-  }, [presenceList, isInRoom]);
+  }, [remotePresence, isInRoom]);
 
   // Build maps for remote highlighting: word highlight + selected cell
   const { remoteHighlightMap, remoteSelectedMap } = useMemo(() => {
     const highlightMap = new Map<string, string>();
     const selectedMap = new Map<string, string>();
     if (!isInRoom || !clueMap) return { remoteHighlightMap: highlightMap, remoteSelectedMap: selectedMap };
-    for (const p of presenceList) {
+    for (const p of remotePresence) {
       if (p.selection) {
         // Mark their selected cell
         const selKey = `${p.selection.row},${p.selection.col}`;
@@ -76,7 +84,7 @@ const Grid: React.FC = () => {
       }
     }
     return { remoteHighlightMap: highlightMap, remoteSelectedMap: selectedMap };
-  }, [presenceList, isInRoom, grid, clueMap]);
+  }, [remotePresence, isInRoom, grid, clueMap]);
 
   // Handle cell click
   const handleCellClick = (row: number, col: number) => {
