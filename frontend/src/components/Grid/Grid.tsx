@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { usePuzzle } from '../../context/PuzzleContext';
 import { useKeyboard } from '../../hooks/useKeyboard';
+import { useRoom } from '../../context/RoomContext';
 import Cell from './Cell';
 import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
 import styles from './Grid.module.css';
+import type { RoomPresence } from '../../types/room';
 
 const Grid: React.FC = () => {
   const { state, dispatch } = usePuzzle();
+  const { presenceList, isInRoom } = useRoom();
   useKeyboard(); // Enable keyboard navigation
 
   if (!state.grid || !state.clueMap) {
@@ -14,6 +17,21 @@ const Grid: React.FC = () => {
   }
 
   const { grid, selection, userGrid, clueMap, checkedCells } = state;
+
+  // Build a map of cellKey -> remote cursors for this cell
+  const remoteCursorMap = useMemo(() => {
+    if (!isInRoom) return new Map<string, RoomPresence[]>();
+    const map = new Map<string, RoomPresence[]>();
+    for (const p of presenceList) {
+      if (p.selection) {
+        const key = `${p.selection.row},${p.selection.col}`;
+        const existing = map.get(key) || [];
+        existing.push(p);
+        map.set(key, existing);
+      }
+    }
+    return map;
+  }, [presenceList, isInRoom]);
 
   // Handle cell click
   const handleCellClick = (row: number, col: number) => {
@@ -90,6 +108,8 @@ const Grid: React.FC = () => {
             const isIncorrect = checkedCells.get(cellKey) === false;
             const isCorrect = checkedCells.get(cellKey) === true;
 
+            const remoteCursors = remoteCursorMap.get(cellKey) || [];
+
             return (
               <Cell
                 key={cellKey}
@@ -99,6 +119,7 @@ const Grid: React.FC = () => {
                 isHighlighted={isHighlighted}
                 isIncorrect={isIncorrect}
                 isCorrect={isCorrect}
+                remoteCursors={remoteCursors}
                 onClick={() => handleCellClick(rowIndex, colIndex)}
                 onChange={(val) => handleCellChange(rowIndex, colIndex, val)}
                 onKeyDown={(e) => handleKeyDown(rowIndex, colIndex, e)}

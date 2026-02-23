@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -46,3 +46,45 @@ class Save(Base):
                         onupdate=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="saves")
+
+
+class Room(Base):
+    __tablename__ = "rooms"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code = Column(String(6), unique=True, nullable=False, index=True)
+    puzzle_id = Column(String(20), nullable=False)
+    puzzle_data = Column(JSONB, nullable=False)
+    user_grid = Column(JSONB, nullable=False, default=[])
+    checked_cells = Column(JSONB, nullable=False, default=[])
+    accumulated_seconds = Column(Integer, nullable=False, default=0)
+    timer_started_at = Column(DateTime(timezone=True), nullable=True)
+    is_complete = Column(Boolean, nullable=False, default=False)
+    is_paused = Column(Boolean, nullable=False, default=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+    max_members = Column(Integer, nullable=False, default=4)
+    expires_at = Column(DateTime(timezone=True),
+                        default=lambda: datetime.now(timezone.utc) + timedelta(hours=24))
+
+    members = relationship("RoomMember", back_populates="room", cascade="all, delete-orphan")
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+class RoomMember(Base):
+    __tablename__ = "room_members"
+    __table_args__ = (
+        UniqueConstraint("room_id", "user_id", name="uq_room_user"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    room_id = Column(UUID(as_uuid=True), ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    color = Column(String(7), nullable=False)
+    display_name = Column(String(255), nullable=False)
+    joined_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    room = relationship("Room", back_populates="members")
+    user = relationship("User", foreign_keys=[user_id])

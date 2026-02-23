@@ -17,6 +17,13 @@ export function useKeyboard() {
     if (!grid || !clueMap || !selection) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept when typing in non-crossword inputs (e.g., Join Room code input)
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        const isGridCell = target.closest('[role="grid"]');
+        if (!isGridCell) return;
+      }
+
       const { row, col, direction } = selection;
 
       // Arrow keys - cell-by-cell navigation

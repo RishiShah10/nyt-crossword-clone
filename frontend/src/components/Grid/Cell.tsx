@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import type { Cell as CellType } from '../../types/puzzle';
+import type { RoomPresence } from '../../types/room';
 import styles from './Grid.module.css';
 
 interface CellProps {
@@ -9,6 +10,7 @@ interface CellProps {
   isHighlighted: boolean;
   isIncorrect: boolean;
   isCorrect: boolean;
+  remoteCursors?: RoomPresence[];
   onClick: () => void;
   onChange: (value: string) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
@@ -21,6 +23,7 @@ const Cell: React.FC<CellProps> = ({
   isHighlighted,
   isIncorrect,
   isCorrect,
+  remoteCursors = [],
   onClick,
   onChange,
   onKeyDown,
@@ -51,8 +54,18 @@ const Cell: React.FC<CellProps> = ({
     .filter(Boolean)
     .join(' ');
 
+  // Remote cursor styling: colored border from other users
+  const hasRemoteCursor = remoteCursors.length > 0;
+  const remoteBorderColor = hasRemoteCursor ? remoteCursors[0].color : undefined;
+  const remoteCursorStyle: React.CSSProperties = hasRemoteCursor
+    ? {
+        boxShadow: `inset 0 0 0 3px ${remoteBorderColor}`,
+        zIndex: 2,
+      }
+    : {};
+
   return (
-    <div className={cellClasses} onClick={onClick} role="gridcell">
+    <div className={cellClasses} onClick={onClick} role="gridcell" style={remoteCursorStyle}>
       {cell.number && <span className={styles.cellNumber} aria-hidden="true">{cell.number}</span>}
       <input
         ref={inputRef}
@@ -71,6 +84,31 @@ const Cell: React.FC<CellProps> = ({
       />
       {isIncorrect && <div className={styles.cellIncorrectMark} aria-hidden="true" />}
       {isCorrect && <div className={styles.cellCorrectMark} aria-hidden="true" />}
+      {hasRemoteCursor && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: -14,
+            left: 0,
+            fontSize: 9,
+            fontWeight: 600,
+            color: '#fff',
+            background: remoteBorderColor,
+            padding: '0 3px',
+            borderRadius: '2px 2px 0 0',
+            lineHeight: '14px',
+            whiteSpace: 'nowrap',
+            zIndex: 10,
+            pointerEvents: 'none',
+            maxWidth: '100%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {remoteCursors[0].displayName.split(' ')[0]}
+        </span>
+      )}
     </div>
   );
 };

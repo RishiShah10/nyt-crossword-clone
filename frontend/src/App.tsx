@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePuzzle } from './context/PuzzleContext';
 import { useAuth } from './context/AuthContext';
+import { useRoom } from './context/RoomContext';
 import { puzzleApi } from './api/client';
 import Grid from './components/Grid/Grid';
 import ClueList from './components/Clues/ClueList';
@@ -10,6 +11,9 @@ import CurrentClue from './components/Header/CurrentClue';
 import PuzzleLibrary from './components/Library/PuzzleLibrary';
 import GoogleSignIn from './components/Auth/GoogleSignIn';
 import UserMenu from './components/Auth/UserMenu';
+import CreateRoom from './components/Room/CreateRoom';
+import JoinRoom from './components/Room/JoinRoom';
+import RoomBar from './components/Room/RoomBar';
 import SavesManager from './utils/savesManager';
 import { savesApi } from './api/savesApi';
 import Confetti from './components/Confetti';
@@ -18,6 +22,7 @@ import './App.css';
 function App() {
   const { state, dispatch } = usePuzzle();
   const { isAuthenticated, isNewUser, clearNewUserFlag } = useAuth();
+  const { room, presenceList, isInRoom, leaveRoom } = useRoom();
   const [showLibrary, setShowLibrary] = useState(false);
 
   // Cleanup old saves on mount
@@ -182,8 +187,18 @@ function App() {
         </div>
       </header>
 
+      {isInRoom && room ? (
+        <RoomBar room={room} presenceList={presenceList} onLeave={leaveRoom} />
+      ) : null}
+
       <div className="controls-container">
         <ActionButtons onOpenLibrary={() => setShowLibrary(true)} onLoadRandom={handleLoadRandom} />
+        {!isInRoom && isAuthenticated && (
+          <>
+            <CreateRoom puzzleId={state.puzzleId} puzzle={state.puzzle} />
+            <JoinRoom />
+          </>
+        )}
       </div>
 
       <CurrentClue />

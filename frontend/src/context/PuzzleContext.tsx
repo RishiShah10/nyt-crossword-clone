@@ -5,6 +5,9 @@ import { buildGrid, buildClueMap } from '../utils/gridUtils';
 import SavesManager from '../utils/savesManager';
 import { throttle } from '../utils/debounce';
 
+// Collaborative dispatch callback type
+type CollaborativeDispatchFn = (action: { type: string; payload?: unknown }) => void;
+
 // State interface
 interface PuzzleState {
   puzzle: Puzzle | null;
@@ -20,24 +23,31 @@ interface PuzzleState {
   isPaused: boolean;
   isLoading: boolean;
   error: string | null;
+  // Collaborative room fields
+  isCollaborative: boolean;
+  collaborativeDispatch: CollaborativeDispatchFn | null;
+  roomTimerData: { accumulatedSeconds: number; timerStartedAt: string | null; isPaused: boolean } | null;
 }
 
 // Action types
 type PuzzleAction =
   | { type: 'SET_PUZZLE'; payload: { puzzle: Puzzle; puzzleId: string } }
-  | { type: 'SET_CELL_VALUE'; payload: { row: number; col: number; value: string } }
+  | { type: 'SET_CELL_VALUE'; payload: { row: number; col: number; value: string; _fromRemote?: boolean } }
   | { type: 'SET_SELECTION'; payload: Selection | null }
   | { type: 'SET_HIGHLIGHTED_CELLS'; payload: Set<string> }
   | { type: 'TOGGLE_DIRECTION' }
-  | { type: 'CHECK_CELL'; payload: { row: number; col: number; isCorrect: boolean } }
-  | { type: 'CLEAR_CHECKS' }
-  | { type: 'SET_COMPLETE'; payload: boolean }
+  | { type: 'CHECK_CELL'; payload: { row: number; col: number; isCorrect: boolean; _fromRemote?: boolean } }
+  | { type: 'CLEAR_CHECKS'; _fromRemote?: boolean }
+  | { type: 'SET_COMPLETE'; payload: boolean; _fromRemote?: boolean }
   | { type: 'INCREMENT_TIMER' }
   | { type: 'RESET_TIMER' }
   | { type: 'TOGGLE_PAUSE' }
   | { type: 'CLEAR_GRID' }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null };
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_COLLABORATIVE'; payload: { isCollaborative: boolean; collaborativeDispatch?: CollaborativeDispatchFn; roomTimerData?: { accumulatedSeconds: number; timerStartedAt: string | null; isPaused: boolean } } }
+  | { type: 'SET_ROOM_TIMER'; payload: { isPaused: boolean; accumulatedSeconds: number; timerStartedAt: string | null } }
+  | { type: 'LOAD_ROOM_STATE'; payload: { userGrid: [string, string][]; checkedCells: [string, boolean][]; accumulatedSeconds: number; isComplete: boolean } };
 
 // Throttled save for timer updates (every 10 seconds)
 const throttledTimerSave = throttle(
@@ -69,6 +79,9 @@ const initialState: PuzzleState = {
   isPaused: false,
   isLoading: false,
   error: null,
+  isCollaborative: false,
+  collaborativeDispatch: null,
+  roomTimerData: null,
 };
 
 // Reducer
@@ -145,7 +158,7 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
     }
 
     case 'SET_CELL_VALUE': {
-      const { row, col, value } = action.payload;
+      const { row, col, value, _fromRemote } = action.payload;
       const key = `${row},${col}`;
       const newUserGrid = new Map(state.userGrid);
 
@@ -155,8 +168,13 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         newUserGrid.set(key, value.toUpperCase());
       }
 
-      // Debounced save to localStorage (500ms delay)
-      if (state.puzzleId && state.puzzle) {
+      // In collaborative mode, broadcast the edit (skip if this came from a remote user)
+      if (!_fromRemote && state.isCollaborative && state.collaborativeDispatch) {
+        state.collaborativeDispatch({ type: 'SET_CELL_VALUE', payload: { row, col, value } });
+      }
+
+      // Debounced save to localStorage (skip in collaborative mode — room persists state)
+      if (!state.isCollaborative && state.puzzleId && state.puzzle) {
         SavesManager.debouncedSaveProgress(
           state.puzzleId,
           newUserGrid,
@@ -192,13 +210,18 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
     }
 
     case 'CHECK_CELL': {
-      const { row, col, isCorrect } = action.payload;
+      const { row, col, isCorrect, _fromRemote } = action.payload;
       const key = `${row},${col}`;
       const newCheckedCells = new Map(state.checkedCells);
       newCheckedCells.set(key, isCorrect);
 
-      // Save checked cells immediately
-      if (state.puzzleId && state.puzzle) {
+      // Broadcast in collaborative mode (skip if from remote)
+      if (!_fromRemote && state.isCollaborative && state.collaborativeDispatch) {
+        state.collaborativeDispatch({ type: 'CHECK_CELL', payload: { row, col, isCorrect } });
+      }
+
+      // Save checked cells immediately (skip in collaborative mode)
+      if (!state.isCollaborative && state.puzzleId && state.puzzle) {
         SavesManager.savePuzzleProgress(
           state.puzzleId,
           state.userGrid,
@@ -215,8 +238,13 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
     case 'CLEAR_CHECKS': {
       const newCheckedCells = new Map<string, boolean>();
 
-      // Save immediately
-      if (state.puzzleId && state.puzzle) {
+      // Broadcast in collaborative mode (skip if from remote)
+      if (!action._fromRemote && state.isCollaborative && state.collaborativeDispatch) {
+        state.collaborativeDispatch({ type: 'CLEAR_CHECKS' });
+      }
+
+      // Save immediately (skip in collaborative mode)
+      if (!state.isCollaborative && state.puzzleId && state.puzzle) {
         SavesManager.savePuzzleProgress(
           state.puzzleId,
           state.userGrid,
@@ -233,8 +261,13 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
     case 'SET_COMPLETE': {
       const newIsComplete = action.payload;
 
-      // Save immediately on completion
-      if (state.puzzleId && state.puzzle) {
+      // Broadcast in collaborative mode (skip if from remote)
+      if (!action._fromRemote && state.isCollaborative && state.collaborativeDispatch) {
+        state.collaborativeDispatch({ type: 'SET_COMPLETE', payload: newIsComplete });
+      }
+
+      // Save immediately on completion (skip in collaborative mode)
+      if (!state.isCollaborative && state.puzzleId && state.puzzle) {
         SavesManager.savePuzzleProgress(
           state.puzzleId,
           state.userGrid,
@@ -306,6 +339,43 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
       return { ...state, error: action.payload, isLoading: false };
     }
 
+    case 'SET_COLLABORATIVE': {
+      const { isCollaborative, collaborativeDispatch, roomTimerData } = action.payload;
+      return {
+        ...state,
+        isCollaborative,
+        collaborativeDispatch: collaborativeDispatch ?? null,
+        roomTimerData: roomTimerData ?? null,
+      };
+    }
+
+    case 'SET_ROOM_TIMER': {
+      const { isPaused, accumulatedSeconds, timerStartedAt } = action.payload;
+      // Compute current elapsed from room timer data
+      let elapsed = accumulatedSeconds;
+      if (!isPaused && timerStartedAt) {
+        const started = new Date(timerStartedAt).getTime();
+        elapsed += Math.floor((Date.now() - started) / 1000);
+      }
+      return {
+        ...state,
+        isPaused,
+        elapsedSeconds: elapsed,
+        roomTimerData: { accumulatedSeconds, timerStartedAt, isPaused },
+      };
+    }
+
+    case 'LOAD_ROOM_STATE': {
+      const { userGrid, checkedCells, accumulatedSeconds, isComplete } = action.payload;
+      return {
+        ...state,
+        userGrid: new Map(userGrid),
+        checkedCells: new Map(checkedCells),
+        elapsedSeconds: accumulatedSeconds,
+        isComplete,
+      };
+    }
+
     default:
       return state;
   }
@@ -331,13 +401,28 @@ export function PuzzleProvider({ children }: { children: ReactNode }) {
   // Timer effect
   useEffect(() => {
     if (state.puzzle && !state.isComplete && !state.isPaused) {
-      const timer = setInterval(() => {
-        dispatch({ type: 'INCREMENT_TIMER' });
-      }, 1000);
-
-      return () => clearInterval(timer);
+      if (state.isCollaborative && state.roomTimerData) {
+        // Collaborative mode: compute elapsed from room timer data each tick
+        const timer = setInterval(() => {
+          const rtd = state.roomTimerData!;
+          let elapsed = rtd.accumulatedSeconds;
+          if (!rtd.isPaused && rtd.timerStartedAt) {
+            const started = new Date(rtd.timerStartedAt).getTime();
+            elapsed += Math.floor((Date.now() - started) / 1000);
+          }
+          // Directly set via INCREMENT_TIMER equivalent but we just recompute
+          dispatch({ type: 'INCREMENT_TIMER' });
+        }, 1000);
+        return () => clearInterval(timer);
+      } else {
+        // Single-player mode: simple increment
+        const timer = setInterval(() => {
+          dispatch({ type: 'INCREMENT_TIMER' });
+        }, 1000);
+        return () => clearInterval(timer);
+      }
     }
-  }, [state.puzzle, state.isComplete, state.isPaused]);
+  }, [state.puzzle, state.isComplete, state.isPaused, state.isCollaborative, state.roomTimerData]);
 
   return (
     <PuzzleContext.Provider value={{ state, dispatch }}>

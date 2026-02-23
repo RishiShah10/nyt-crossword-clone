@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from .api import puzzles_router, auth_router, saves_router
+from .api import puzzles_router, auth_router, saves_router, rooms_router
 from .config import settings
 from .services import CacheService, PuzzleService
 from .db.init_db import init_db
@@ -62,6 +62,7 @@ app.add_middleware(
 app.include_router(puzzles_router)
 app.include_router(auth_router)
 app.include_router(saves_router)
+app.include_router(rooms_router)
 
 
 @app.get("/")

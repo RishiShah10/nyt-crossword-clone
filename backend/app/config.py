@@ -37,5 +37,8 @@ class Settings:
     JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
     JWT_EXPIRY_HOURS: int = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
 
+    # Ably
+    ABLY_API_KEY: str = os.getenv("ABLY_API_KEY", "")
+
 
 settings = Settings()

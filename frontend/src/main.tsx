@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import { PuzzleProvider } from './context/PuzzleContext'
 import { AuthProvider } from './context/AuthContext'
+import { RoomProvider } from './context/RoomContext'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')!).render(
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AuthProvider>
         <PuzzleProvider>
-          <App />
+          <RoomProvider>
+            <App />
+          </RoomProvider>
         </PuzzleProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
