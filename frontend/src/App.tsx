@@ -22,7 +22,7 @@ import './App.css';
 function App() {
   const { state, dispatch } = usePuzzle();
   const { isAuthenticated, isNewUser, clearNewUserFlag } = useAuth();
-  const { room, presenceList, isInRoom, leaveRoom } = useRoom();
+  const { room, myMember, presenceList, isInRoom, leaveRoom, changeColor } = useRoom();
   const [showLibrary, setShowLibrary] = useState(false);
 
   // Cleanup old saves on mount
@@ -188,7 +188,7 @@ function App() {
       </header>
 
       {isInRoom && room ? (
-        <RoomBar room={room} presenceList={presenceList} onLeave={leaveRoom} />
+        <RoomBar room={room} myMember={myMember} presenceList={presenceList} onLeave={leaveRoom} onChangeColor={changeColor} />
       ) : null}
 
       <div className="controls-container">

@@ -15,6 +15,10 @@ class CreateRoomRequest(BaseModel):
     puzzle_data: dict
 
 
+class UpdateColorRequest(BaseModel):
+    color: str
+
+
 class UpdateStateRequest(BaseModel):
     userGrid: Optional[list] = None
     checkedCells: Optional[list] = None
@@ -103,6 +107,23 @@ async def leave_room(
     if not success:
         raise HTTPException(status_code=404, detail="Room or membership not found")
     return {"status": "left"}
+
+
+@router.put("/{code}/color")
+async def update_color(
+    code: str,
+    body: UpdateColorRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update the current user's color in a room."""
+    service = RoomService(db)
+    result = await service.update_member_color(code.upper(), current_user["id"], body.color)
+    if not result:
+        raise HTTPException(status_code=404, detail="Room, member, or color not found")
+    if result.get("taken"):
+        raise HTTPException(status_code=409, detail="Color already taken by another member")
+    return result
 
 
 @router.post("/{code}/token")

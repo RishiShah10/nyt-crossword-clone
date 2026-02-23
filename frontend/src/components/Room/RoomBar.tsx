@@ -1,14 +1,28 @@
 import React, { useState } from 'react';
 import type { Room, RoomMember, RoomPresence } from '../../types/room';
 
+const ALL_COLORS = [
+  { hex: '#4A90D9', label: 'Blue' },
+  { hex: '#E74C3C', label: 'Red' },
+  { hex: '#2ECC71', label: 'Green' },
+  { hex: '#9B59B6', label: 'Purple' },
+  { hex: '#F39C12', label: 'Orange' },
+  { hex: '#1ABC9C', label: 'Teal' },
+  { hex: '#E91E63', label: 'Pink' },
+  { hex: '#3F51B5', label: 'Indigo' },
+];
+
 interface RoomBarProps {
   room: Room;
+  myMember: RoomMember | null;
   presenceList: RoomPresence[];
   onLeave: () => void;
+  onChangeColor: (color: string) => void;
 }
 
-const RoomBar: React.FC<RoomBarProps> = ({ room, presenceList, onLeave }) => {
+const RoomBar: React.FC<RoomBarProps> = ({ room, myMember, presenceList, onLeave, onChangeColor }) => {
   const [copied, setCopied] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
   const copyCode = () => {
     navigator.clipboard.writeText(room.code).then(() => {
@@ -17,8 +31,9 @@ const RoomBar: React.FC<RoomBarProps> = ({ room, presenceList, onLeave }) => {
     });
   };
 
-  // Merge members with presence (online status)
   const onlineUserIds = new Set(presenceList.map(p => p.userId));
+  const takenColors = new Set(room.members.map(m => m.color));
+  const myColor = myMember?.color;
 
   return (
     <div style={{
@@ -30,6 +45,7 @@ const RoomBar: React.FC<RoomBarProps> = ({ room, presenceList, onLeave }) => {
       borderBottom: '1px solid #d0d8f0',
       fontSize: '0.8rem',
       flexWrap: 'wrap',
+      position: 'relative',
     }}>
       <span style={{ fontWeight: 600, color: '#333' }}>Room:</span>
       <button
@@ -83,6 +99,88 @@ const RoomBar: React.FC<RoomBarProps> = ({ room, presenceList, onLeave }) => {
             </span>
           );
         })}
+      </div>
+
+      <span style={{ color: '#666', fontSize: '0.75rem' }}>|</span>
+
+      {/* Color picker toggle */}
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={() => setShowPicker(!showPicker)}
+          title="Change your color"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            background: '#fff',
+            border: '1px solid #ccc',
+            borderRadius: 4,
+            padding: '2px 8px',
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+            color: '#444',
+          }}
+        >
+          <span style={{
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: myColor || '#4A90D9',
+            display: 'inline-block',
+            border: '1px solid rgba(0,0,0,0.2)',
+          }} />
+          Color
+        </button>
+
+        {showPicker && (
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            marginTop: 4,
+            background: '#fff',
+            border: '1px solid #d0d8f0',
+            borderRadius: 6,
+            padding: 8,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            zIndex: 100,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 6,
+            minWidth: 140,
+          }}>
+            {ALL_COLORS.map(({ hex, label }) => {
+              const isActive = hex === myColor;
+              const isTaken = takenColors.has(hex) && !isActive;
+              return (
+                <button
+                  key={hex}
+                  onClick={() => {
+                    if (!isTaken) {
+                      onChangeColor(hex);
+                      setShowPicker(false);
+                    }
+                  }}
+                  title={isTaken ? `${label} (taken)` : label}
+                  disabled={isTaken}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: hex,
+                    border: isActive ? '3px solid #000' : '2px solid rgba(0,0,0,0.1)',
+                    cursor: isTaken ? 'not-allowed' : 'pointer',
+                    opacity: isTaken ? 0.3 : 1,
+                    outline: 'none',
+                    padding: 0,
+                    transition: 'transform 0.1s',
+                    transform: isActive ? 'scale(1.1)' : 'scale(1)',
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <button

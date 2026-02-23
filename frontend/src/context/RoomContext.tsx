@@ -16,6 +16,7 @@ interface RoomContextType {
   createRoom: (puzzleId: string, puzzleData: Record<string, unknown>) => Promise<void>;
   joinRoom: (code: string) => Promise<void>;
   leaveRoom: () => Promise<void>;
+  changeColor: (color: string) => Promise<void>;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -233,6 +234,23 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     window.history.replaceState({}, '', url.toString());
   }, [dispatch]);
 
+  const changeColor = useCallback(async (color: string) => {
+    if (!room) return;
+    try {
+      const updatedMember = await roomsApi.updateColor(room.code, color);
+      setMyMember(prev => prev ? { ...prev, color: updatedMember.color } : prev);
+      // Also update the room's members list
+      setRoom(prev => prev ? {
+        ...prev,
+        members: prev.members.map(m =>
+          m.userId === updatedMember.userId ? { ...m, color: updatedMember.color } : m
+        ),
+      } : prev);
+    } catch (err) {
+      console.error('Failed to change color:', err);
+    }
+  }, [room]);
+
   const leaveRoom = useCallback(async () => {
     if (!room) return;
     try {
@@ -260,6 +278,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     createRoom,
     joinRoom,
     leaveRoom,
+    changeColor,
   };
 
   return (

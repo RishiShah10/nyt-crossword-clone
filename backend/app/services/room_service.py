@@ -13,7 +13,8 @@ from ..db.models import Room, RoomMember, User
 CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 6
 
-MEMBER_COLORS = ["#4A90D9", "#E74C3C", "#2ECC71", "#9B59B6"]
+MEMBER_COLORS = ["#4A90D9", "#E74C3C", "#2ECC71", "#9B59B6", "#F39C12", "#1ABC9C", "#E91E63", "#3F51B5"]
+ALL_COLORS = set(MEMBER_COLORS)
 
 
 class RoomService:
@@ -172,6 +173,38 @@ class RoomService:
             )
         )
         return result.scalar_one_or_none() is not None
+
+    async def update_member_color(self, code: str, user_id: UUID, color: str) -> Optional[dict]:
+        """Update a member's color. Returns updated member or None."""
+        if color not in ALL_COLORS:
+            return None
+
+        result = await self.db.execute(
+            select(Room)
+            .options(selectinload(Room.members))
+            .where(Room.code == code)
+        )
+        room = result.scalar_one_or_none()
+        if not room:
+            return None
+
+        # Find the member
+        member = None
+        for m in room.members:
+            if str(m.user_id) == str(user_id):
+                member = m
+                break
+        if not member:
+            return None
+
+        # Check color isn't taken by another member
+        for m in room.members:
+            if str(m.user_id) != str(user_id) and m.color == color:
+                return {"taken": True}
+
+        member.color = color
+        await self.db.commit()
+        return self._member_to_dict(member)
 
     async def get_room_state(self, code: str) -> Optional[dict]:
         """Get the current shared state for a room."""
