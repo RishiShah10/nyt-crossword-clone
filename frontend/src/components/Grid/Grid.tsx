@@ -7,6 +7,22 @@ import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
 import styles from './Grid.module.css';
 import type { RoomPresence } from '../../types/room';
 
+// Pastel word-highlight colors matching each player's assigned color
+const HIGHLIGHT_COLORS: Record<string, string> = {
+  '#4A90D9': '#A7D8F0', // Blue
+  '#E74C3C': '#F5C4C0', // Red
+  '#2ECC71': '#B5EDCF', // Green
+  '#9B59B6': '#D5BDE6', // Purple
+};
+
+// Selected-cell colors for remote players (replaces yellow for others)
+const SELECTED_COLORS: Record<string, string> = {
+  '#4A90D9': '#F7DA21', // Blue player → yellow (same as local)
+  '#E74C3C': '#F7A59E', // Red player → salmon
+  '#2ECC71': '#8EE4AF', // Green player → bright mint
+  '#9B59B6': '#C9A0DC', // Purple player → bright lavender
+};
+
 const Grid: React.FC = () => {
   const { state, dispatch } = usePuzzle();
   const { presenceList, isInRoom } = useRoom();
@@ -33,26 +49,33 @@ const Grid: React.FC = () => {
     return map;
   }, [presenceList, isInRoom]);
 
-  // Build a map of cellKey -> remote highlight color (word highlighting for remote users)
-  const remoteHighlightMap = useMemo(() => {
-    if (!isInRoom || !clueMap) return new Map<string, string>();
-    const map = new Map<string, string>();
+  // Build maps for remote highlighting: word highlight + selected cell
+  const { remoteHighlightMap, remoteSelectedMap } = useMemo(() => {
+    const highlightMap = new Map<string, string>();
+    const selectedMap = new Map<string, string>();
+    if (!isInRoom || !clueMap) return { remoteHighlightMap: highlightMap, remoteSelectedMap: selectedMap };
     for (const p of presenceList) {
       if (p.selection) {
+        // Mark their selected cell
+        const selKey = `${p.selection.row},${p.selection.col}`;
+        if (!selectedMap.has(selKey)) {
+          selectedMap.set(selKey, SELECTED_COLORS[p.color] || p.color);
+        }
+        // Mark their highlighted word
         const clueKey = getClueKeyForCell(grid, p.selection.row, p.selection.col, p.selection.direction, clueMap);
         if (clueKey) {
           const cells = getCellsForClue(clueKey, clueMap);
+          const highlightColor = HIGHLIGHT_COLORS[p.color] || p.color;
           for (const c of cells) {
             const key = `${c.row},${c.col}`;
-            // First remote user's color wins per cell
-            if (!map.has(key)) {
-              map.set(key, p.color);
+            if (!highlightMap.has(key)) {
+              highlightMap.set(key, highlightColor);
             }
           }
         }
       }
     }
-    return map;
+    return { remoteHighlightMap: highlightMap, remoteSelectedMap: selectedMap };
   }, [presenceList, isInRoom, grid, clueMap]);
 
   // Handle cell click
@@ -131,9 +154,12 @@ const Grid: React.FC = () => {
             const isCorrect = checkedCells.get(cellKey) === true;
 
             const remoteCursors = remoteCursorMap.get(cellKey) || [];
-            // Only show remote highlight if this cell isn't in the local user's highlighted word
-            const remoteHighlightColor = !isHighlighted && !isSelected
+            // Only show remote highlight/selected if this cell isn't in the local user's word
+            const remoteHlColor = !isHighlighted && !isSelected
               ? remoteHighlightMap.get(cellKey)
+              : undefined;
+            const remoteSelColor = !isSelected
+              ? remoteSelectedMap.get(cellKey)
               : undefined;
 
             return (
@@ -146,7 +172,8 @@ const Grid: React.FC = () => {
                 isIncorrect={isIncorrect}
                 isCorrect={isCorrect}
                 remoteCursors={remoteCursors}
-                remoteHighlightColor={remoteHighlightColor}
+                remoteHighlightColor={remoteHlColor}
+                remoteSelectedColor={remoteSelColor}
                 onClick={() => handleCellClick(rowIndex, colIndex)}
                 onChange={(val) => handleCellChange(rowIndex, colIndex, val)}
                 onKeyDown={(e) => handleKeyDown(rowIndex, colIndex, e)}

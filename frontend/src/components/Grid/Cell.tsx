@@ -12,6 +12,7 @@ interface CellProps {
   isCorrect: boolean;
   remoteCursors?: RoomPresence[];
   remoteHighlightColor?: string;
+  remoteSelectedColor?: string;
   onClick: () => void;
   onChange: (value: string) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
@@ -26,6 +27,7 @@ const Cell: React.FC<CellProps> = ({
   isCorrect,
   remoteCursors = [],
   remoteHighlightColor,
+  remoteSelectedColor,
   onClick,
   onChange,
   onKeyDown,
@@ -56,7 +58,7 @@ const Cell: React.FC<CellProps> = ({
     .filter(Boolean)
     .join(' ');
 
-  // Remote cursor styling: colored border from other users
+  // Remote cursor styling
   const hasRemoteCursor = remoteCursors.length > 0;
   const remoteBorderColor = hasRemoteCursor ? remoteCursors[0].color : undefined;
   const remoteCursorStyle: React.CSSProperties = {};
@@ -64,9 +66,13 @@ const Cell: React.FC<CellProps> = ({
     remoteCursorStyle.boxShadow = `inset 0 0 0 3px ${remoteBorderColor}`;
     remoteCursorStyle.zIndex = 2;
   }
-  // Remote word highlight: subtle tint in their color
-  if (remoteHighlightColor) {
-    remoteCursorStyle.backgroundColor = `${remoteHighlightColor}30`;
+  // Remote selected cell: solid color like the local yellow
+  if (remoteSelectedColor && hasRemoteCursor) {
+    remoteCursorStyle.backgroundColor = remoteSelectedColor;
+  }
+  // Remote word highlight: pastel tint for the rest of the word
+  else if (remoteHighlightColor) {
+    remoteCursorStyle.backgroundColor = remoteHighlightColor;
   }
 
   return (

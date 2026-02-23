@@ -13,7 +13,7 @@ from ..db.models import Room, RoomMember, User
 CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 6
 
-MEMBER_COLORS = ["#4A90D9", "#E74C3C", "#2ECC71", "#F39C12"]
+MEMBER_COLORS = ["#4A90D9", "#E74C3C", "#2ECC71", "#9B59B6"]
 
 
 class RoomService:
