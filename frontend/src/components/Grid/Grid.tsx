@@ -33,6 +33,28 @@ const Grid: React.FC = () => {
     return map;
   }, [presenceList, isInRoom]);
 
+  // Build a map of cellKey -> remote highlight color (word highlighting for remote users)
+  const remoteHighlightMap = useMemo(() => {
+    if (!isInRoom || !clueMap) return new Map<string, string>();
+    const map = new Map<string, string>();
+    for (const p of presenceList) {
+      if (p.selection) {
+        const clueKey = getClueKeyForCell(grid, p.selection.row, p.selection.col, p.selection.direction, clueMap);
+        if (clueKey) {
+          const cells = getCellsForClue(clueKey, clueMap);
+          for (const c of cells) {
+            const key = `${c.row},${c.col}`;
+            // First remote user's color wins per cell
+            if (!map.has(key)) {
+              map.set(key, p.color);
+            }
+          }
+        }
+      }
+    }
+    return map;
+  }, [presenceList, isInRoom, grid, clueMap]);
+
   // Handle cell click
   const handleCellClick = (row: number, col: number) => {
     const cell = grid[row][col];
@@ -109,6 +131,10 @@ const Grid: React.FC = () => {
             const isCorrect = checkedCells.get(cellKey) === true;
 
             const remoteCursors = remoteCursorMap.get(cellKey) || [];
+            // Only show remote highlight if this cell isn't in the local user's highlighted word
+            const remoteHighlightColor = !isHighlighted && !isSelected
+              ? remoteHighlightMap.get(cellKey)
+              : undefined;
 
             return (
               <Cell
@@ -120,6 +146,7 @@ const Grid: React.FC = () => {
                 isIncorrect={isIncorrect}
                 isCorrect={isCorrect}
                 remoteCursors={remoteCursors}
+                remoteHighlightColor={remoteHighlightColor}
                 onClick={() => handleCellClick(rowIndex, colIndex)}
                 onChange={(val) => handleCellChange(rowIndex, colIndex, val)}
                 onKeyDown={(e) => handleKeyDown(rowIndex, colIndex, e)}
