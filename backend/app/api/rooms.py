@@ -1,7 +1,9 @@
 from __future__ import annotations
+import logging
+import re
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -9,26 +11,46 @@ from ..dependencies import get_db, get_current_user
 from ..services.room_service import RoomService
 from ..services.ably_service import ably_service
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/rooms", tags=["rooms"])
 limiter = Limiter(key_func=get_remote_address)
 
+ROOM_CODE_PATTERN = re.compile(r"^[A-Z0-9]{4,8}$")
+
 
 class CreateRoomRequest(BaseModel):
-    puzzle_id: str
+    puzzle_id: str = Field(..., min_length=1, max_length=50)
     puzzle_data: dict
+
+    @field_validator("puzzle_data")
+    @classmethod
+    def validate_puzzle_data_size(cls, v):
+        import json
+        if len(json.dumps(v)) > 500_000:  # 500KB max
+            raise ValueError("puzzle_data too large")
+        return v
 
 
 class UpdateColorRequest(BaseModel):
-    color: str
+    color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
 
 
 class UpdateStateRequest(BaseModel):
-    userGrid: Optional[list] = None
-    checkedCells: Optional[list] = None
-    accumulatedSeconds: Optional[int] = None
+    userGrid: Optional[List] = Field(None, max_length=2000)
+    checkedCells: Optional[List] = Field(None, max_length=2000)
+    accumulatedSeconds: Optional[int] = Field(None, ge=0, le=360000)
     timerStartedAt: Optional[str] = None
     isComplete: Optional[bool] = None
     isPaused: Optional[bool] = None
+
+
+def _validate_room_code(code: str) -> str:
+    """Validate and normalize a room code."""
+    normalized = code.strip().upper()
+    if not ROOM_CODE_PATTERN.match(normalized):
+        raise HTTPException(status_code=400, detail="Invalid room code format")
+    return normalized
 
 
 @router.post("")
@@ -41,7 +63,6 @@ async def create_room(
 ):
     """Create a new collaborative room for a puzzle."""
     service = RoomService(db)
-    # Fetch user's display name
     from ..db.models import User
     from sqlalchemy import select
 
@@ -64,9 +85,16 @@ async def get_room(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get room info and members list."""
+    """Get room info and members list. Must be a member."""
+    code = _validate_room_code(code)
     service = RoomService(db)
-    room = await service.get_room(code.upper())
+
+    # Require membership to view room details
+    is_member = await service.is_member(code, current_user["id"])
+    if not is_member:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    room = await service.get_room(code)
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
     if room.get("expired"):
@@ -83,6 +111,7 @@ async def join_room(
     db: AsyncSession = Depends(get_db),
 ):
     """Join an existing room."""
+    code = _validate_room_code(code)
     service = RoomService(db)
 
     from ..db.models import User
@@ -92,7 +121,7 @@ async def join_room(
     user = result.scalar_one_or_none()
     display_name = user.name if user else current_user["email"]
 
-    join_result = await service.join_room(code.upper(), current_user["id"], display_name)
+    join_result = await service.join_room(code, current_user["id"], display_name)
     if not join_result:
         raise HTTPException(status_code=404, detail="Room not found")
     if join_result.get("expired"):
@@ -109,8 +138,9 @@ async def leave_room(
     db: AsyncSession = Depends(get_db),
 ):
     """Leave a room."""
+    code = _validate_room_code(code)
     service = RoomService(db)
-    success = await service.leave_room(code.upper(), current_user["id"])
+    success = await service.leave_room(code, current_user["id"])
     if not success:
         raise HTTPException(status_code=404, detail="Room or membership not found")
     return {"status": "left"}
@@ -124,8 +154,9 @@ async def update_color(
     db: AsyncSession = Depends(get_db),
 ):
     """Update the current user's color in a room."""
+    code = _validate_room_code(code)
     service = RoomService(db)
-    result = await service.update_member_color(code.upper(), current_user["id"], body.color)
+    result = await service.update_member_color(code, current_user["id"], body.color)
     if not result:
         raise HTTPException(status_code=404, detail="Room, member, or color not found")
     if result.get("taken"):
@@ -142,20 +173,21 @@ async def get_ably_token(
     db: AsyncSession = Depends(get_db),
 ):
     """Get an Ably auth token scoped to this room's channel. Must be a member."""
+    code = _validate_room_code(code)
     service = RoomService(db)
-    is_member = await service.is_member(code.upper(), current_user["id"])
+    is_member = await service.is_member(code, current_user["id"])
     if not is_member:
         raise HTTPException(status_code=403, detail="Not a member of this room")
 
     try:
-        channel = f"room:{code.upper()}"
+        channel = f"room:{code}"
         token_request = await ably_service.create_token_request(
             client_id=str(current_user["id"]),
             channel=channel,
         )
         return token_request
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Real-time service unavailable")
 
 
 @router.get("/{code}/state")
@@ -165,12 +197,13 @@ async def get_room_state(
     db: AsyncSession = Depends(get_db),
 ):
     """Get current room grid state (for late joiners)."""
+    code = _validate_room_code(code)
     service = RoomService(db)
-    is_member = await service.is_member(code.upper(), current_user["id"])
+    is_member = await service.is_member(code, current_user["id"])
     if not is_member:
         raise HTTPException(status_code=403, detail="Not a member of this room")
 
-    state = await service.get_room_state(code.upper())
+    state = await service.get_room_state(code)
     if not state:
         raise HTTPException(status_code=404, detail="Room not found")
     return state
@@ -184,12 +217,13 @@ async def update_room_state(
     db: AsyncSession = Depends(get_db),
 ):
     """Persist current grid state (debounced from client)."""
+    code = _validate_room_code(code)
     service = RoomService(db)
-    is_member = await service.is_member(code.upper(), current_user["id"])
+    is_member = await service.is_member(code, current_user["id"])
     if not is_member:
         raise HTTPException(status_code=403, detail="Not a member of this room")
 
-    success = await service.update_room_state(code.upper(), body.model_dump(exclude_none=True))
+    success = await service.update_room_state(code, body.model_dump(exclude_none=True))
     if not success:
         raise HTTPException(status_code=404, detail="Room not found")
     return {"status": "updated"}
