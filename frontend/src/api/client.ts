@@ -42,6 +42,11 @@ export const puzzleApi = {
     return response.data;
   },
 
+  async getTodaysLivePuzzle(): Promise<PuzzleResponse> {
+    const response = await apiClient.get<PuzzleResponse>('/api/puzzles/today/live');
+    return response.data;
+  },
+
   async checkAnswers(date: string, userAnswers: { across: Record<string, string>; down: Record<string, string> }) {
     const response = await apiClient.post(`/api/puzzles/${date}/check`, userAnswers);
     return response.data;

@@ -1,9 +1,18 @@
 import httpx
+import logging
 import random
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from ..models.puzzle import Puzzle
 from .cache_service import CacheService
+
+if TYPE_CHECKING:
+    from .nyt_service import NytService
+
+logger = logging.getLogger(__name__)
+
+# Boundary date: 2019-01-01+ uses NYT API, before uses GitHub archive
+NYT_CUTOVER = datetime(2019, 1, 1)
 
 
 class PuzzleService:
@@ -12,21 +21,21 @@ class PuzzleService:
     def __init__(
         self,
         cache_service: CacheService,
-        github_base_url: str = "https://raw.githubusercontent.com/doshea/nyt_crosswords/master"
+        github_base_url: str = "https://raw.githubusercontent.com/doshea/nyt_crosswords/master",
+        nyt_service: Optional["NytService"] = None,
     ):
-        """Initialize puzzle service.
-
-        Args:
-            cache_service: Cache service instance
-            github_base_url: Base URL for NYT crosswords GitHub repository
-        """
         self.cache_service = cache_service
         self.github_base_url = github_base_url.rstrip('/')
         self.http_client = httpx.AsyncClient(timeout=30.0)
+        self.nyt_service = nyt_service
 
-        # Date range for available puzzles (2010-01-01 to 2018-12-31)
+        # Date range for available puzzles
         self.min_date = datetime(2010, 1, 1)
-        self.max_date = datetime(2018, 12, 31)
+        # Extend max_date to today if NYT service is available
+        if self.nyt_service:
+            self.max_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            self.max_date = datetime(2018, 12, 31)
 
     async def close(self):
         """Close HTTP client."""
@@ -85,37 +94,71 @@ class PuzzleService:
 
         Returns:
             Puzzle model if found, None otherwise
+
+        Raises:
+            NytAuthError: Re-raised if NYT cookie is invalid.
         """
         # Validate date format
         try:
             date_obj = datetime.strptime(date, "%Y-%m-%d")
             if not (self.min_date <= date_obj <= self.max_date):
-                print(f"Date {date} is outside available range (2010-2018)")
+                logger.info("Date %s is outside available range", date)
                 return None
         except ValueError:
-            print(f"Invalid date format: {date}")
+            logger.info("Invalid date format: %s", date)
             return None
 
         # Try cache first
         puzzle_data = self.cache_service.get(date)
 
-        # Fetch from GitHub if not cached
+        # Fetch from source if not cached
         if puzzle_data is None:
-            puzzle_data = await self._fetch_from_github(date)
+            if date_obj >= NYT_CUTOVER and self.nyt_service:
+                puzzle_data = await self._fetch_from_nyt(date)
+            else:
+                puzzle_data = await self._fetch_from_github(date)
 
         # Parse and return puzzle
         if puzzle_data:
             try:
                 puzzle = Puzzle(**puzzle_data)
                 if not puzzle.validate_grid():
-                    print(f"Invalid grid dimensions for puzzle {date}")
+                    logger.warning("Invalid grid dimensions for puzzle %s", date)
                     return None
                 return puzzle
             except Exception as e:
-                print(f"Error parsing puzzle data for {date}: {e}")
+                logger.error("Error parsing puzzle data for %s: %s", date, e)
                 return None
 
         return None
+
+    async def _fetch_from_nyt(self, date: str) -> Optional[dict]:
+        """Fetch puzzle from the NYT v6 API.
+
+        Raises:
+            NytAuthError: Re-raised so the API layer can return 403.
+        """
+        from .nyt_service import NytAuthError, NytApiError
+
+        try:
+            puzzle_data = await self.nyt_service.fetch_puzzle(date)
+            if puzzle_data:
+                self.cache_service.set(date, puzzle_data)
+            return puzzle_data
+        except NytAuthError:
+            raise
+        except NytApiError as e:
+            logger.error("NYT API error for %s: %s", date, e)
+            return None
+
+    async def get_todays_puzzle(self) -> Optional[Puzzle]:
+        """Get today's live NYT puzzle.
+
+        Raises:
+            NytAuthError: Re-raised if cookie is invalid.
+        """
+        today = datetime.now().strftime("%Y-%m-%d")
+        return await self.get_puzzle(today)
 
     async def get_random_puzzle(self) -> Optional[Puzzle]:
         """Get a random puzzle from the available date range.
@@ -157,13 +200,10 @@ class PuzzleService:
         return await self.get_puzzle(date_str)
 
     async def prefetch_recent_puzzles(self, days: int = 7):
-        """Pre-fetch and cache recent puzzles for faster access.
-
-        Args:
-            days: Number of days to prefetch (from most recent backward)
-        """
-        print(f"Pre-fetching last {days} puzzles from 2018...")
-        base_date = self.max_date
+        """Pre-fetch and cache recent puzzles from the GitHub archive for faster access."""
+        # Always prefetch from the GitHub archive (fast, no auth needed)
+        base_date = datetime(2018, 12, 31)
+        print(f"Pre-fetching last {days} puzzles from GitHub archive...")
 
         for i in range(days):
             date = base_date - timedelta(days=i)

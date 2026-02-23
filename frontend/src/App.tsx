@@ -7,6 +7,7 @@ import Grid from './components/Grid/Grid';
 import ClueList from './components/Clues/ClueList';
 import Timer from './components/Header/Timer';
 import ActionButtons from './components/Header/ActionButtons';
+import PuzzleSelector from './components/Header/PuzzleSelector';
 import CurrentClue from './components/Header/CurrentClue';
 import PuzzleLibrary from './components/Library/PuzzleLibrary';
 import GoogleSignIn from './components/Auth/GoogleSignIn';
@@ -63,11 +64,16 @@ function App() {
   }, [isNewUser, isAuthenticated, clearNewUserFlag]);
 
   useEffect(() => {
-    // Load a random puzzle on mount
+    // Load today's live puzzle on mount, fall back to random archive puzzle
     const loadPuzzle = async () => {
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
-        const response = await puzzleApi.getRandomPuzzle();
+        let response;
+        try {
+          response = await puzzleApi.getTodaysLivePuzzle();
+        } catch {
+          response = await puzzleApi.getRandomPuzzle();
+        }
         dispatch({
           type: 'SET_PUZZLE',
           payload: {
@@ -192,6 +198,7 @@ function App() {
       ) : null}
 
       <div className="controls-container">
+        <PuzzleSelector />
         <ActionButtons onOpenLibrary={() => setShowLibrary(true)} onLoadRandom={handleLoadRandom} />
         {!isInRoom && isAuthenticated && (
           <>

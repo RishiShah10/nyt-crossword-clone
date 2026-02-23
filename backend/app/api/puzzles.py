@@ -3,6 +3,7 @@ from typing import Optional
 from ..models.puzzle import Puzzle, PuzzleResponse
 from ..services.puzzle_service import PuzzleService
 from ..services.cache_service import CacheService
+from ..services.nyt_service import NytService, NytAuthError
 from ..config import settings
 
 
@@ -10,45 +11,17 @@ router = APIRouter(prefix="/api/puzzles", tags=["puzzles"])
 
 # Global service instances
 cache_service = CacheService(cache_dir=settings.CACHE_DIR)
+nyt_service = NytService(settings.NYT_COOKIE) if settings.NYT_COOKIE else None
 puzzle_service = PuzzleService(
     cache_service=cache_service,
-    github_base_url=settings.GITHUB_REPO_URL
+    github_base_url=settings.GITHUB_REPO_URL,
+    nyt_service=nyt_service,
 )
-
-
-@router.get("/{date}", response_model=PuzzleResponse)
-async def get_puzzle_by_date(date: str):
-    """Get a crossword puzzle by date.
-
-    Args:
-        date: Date in YYYY-MM-DD format (2010-01-01 to 2018-12-31)
-
-    Returns:
-        Puzzle data with metadata
-
-    Raises:
-        HTTPException: If puzzle not found or invalid date
-    """
-    puzzle = await puzzle_service.get_puzzle(date)
-    if puzzle is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Puzzle not found for date {date}. Available range: 2010-2018."
-        )
-
-    return PuzzleResponse(puzzle=puzzle, puzzle_id=date)
 
 
 @router.get("/random/puzzle", response_model=PuzzleResponse)
 async def get_random_puzzle():
-    """Get a random crossword puzzle from the archive.
-
-    Returns:
-        Random puzzle data with metadata
-
-    Raises:
-        HTTPException: If unable to fetch puzzle
-    """
+    """Get a random crossword puzzle from the archive."""
     puzzle = await puzzle_service.get_random_puzzle()
     if puzzle is None:
         raise HTTPException(
@@ -56,22 +29,13 @@ async def get_random_puzzle():
             detail="Unable to fetch random puzzle"
         )
 
-    # Extract date from puzzle metadata if available
     puzzle_id = puzzle.date if puzzle.date else "unknown"
-
     return PuzzleResponse(puzzle=puzzle, puzzle_id=puzzle_id)
 
 
 @router.get("/today/historical", response_model=PuzzleResponse)
 async def get_today_historical():
-    """Get today's historical puzzle (same month/day from a past year).
-
-    Returns:
-        Historical puzzle for today's date
-
-    Raises:
-        HTTPException: If unable to fetch puzzle
-    """
+    """Get today's historical puzzle (same month/day from a past year)."""
     puzzle = await puzzle_service.get_today_historical_puzzle()
     if puzzle is None:
         raise HTTPException(
@@ -80,8 +44,54 @@ async def get_today_historical():
         )
 
     puzzle_id = puzzle.date if puzzle.date else "unknown"
-
     return PuzzleResponse(puzzle=puzzle, puzzle_id=puzzle_id)
+
+
+@router.get("/today/live", response_model=PuzzleResponse)
+async def get_todays_live_puzzle():
+    """Get today's live NYT puzzle (requires NYT_COOKIE)."""
+    if nyt_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="NYT live puzzles are not configured. Set NYT_COOKIE env var."
+        )
+
+    try:
+        puzzle = await puzzle_service.get_todays_puzzle()
+    except NytAuthError:
+        raise HTTPException(
+            status_code=403,
+            detail="NYT subscription cookie is invalid or expired"
+        )
+
+    if puzzle is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Today's puzzle not found"
+        )
+
+    puzzle_id = puzzle.date if puzzle.date else "unknown"
+    return PuzzleResponse(puzzle=puzzle, puzzle_id=puzzle_id)
+
+
+@router.get("/{date}", response_model=PuzzleResponse)
+async def get_puzzle_by_date(date: str):
+    """Get a crossword puzzle by date (2010-present if NYT_COOKIE is set)."""
+    try:
+        puzzle = await puzzle_service.get_puzzle(date)
+    except NytAuthError:
+        raise HTTPException(
+            status_code=403,
+            detail="NYT subscription cookie is invalid or expired"
+        )
+
+    if puzzle is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Puzzle not found for date {date}"
+        )
+
+    return PuzzleResponse(puzzle=puzzle, puzzle_id=date)
 
 
 @router.post("/{date}/check")

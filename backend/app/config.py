@@ -42,6 +42,9 @@ class Settings:
     # Ably
     ABLY_API_KEY: str = os.getenv("ABLY_API_KEY", "")
 
+    # NYT Live Puzzles (optional — enables fetching 2019+ puzzles)
+    NYT_COOKIE: str = os.getenv("NYT_COOKIE", "")
+
     def validate(self) -> None:
         """Validate critical settings at startup. Raises on misconfiguration."""
         is_prod = bool(os.environ.get("VERCEL"))
