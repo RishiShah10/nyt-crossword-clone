@@ -22,8 +22,8 @@ if db_url:
     connect_args = {}
     if needs_ssl:
         ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
+        # Use default verification (check_hostname=True, CERT_REQUIRED)
+        # Neon's certificates are signed by a public CA, so this works.
         connect_args["ssl"] = ssl_ctx
 
     engine = create_async_engine(

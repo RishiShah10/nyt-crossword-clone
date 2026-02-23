@@ -1,6 +1,5 @@
 from __future__ import annotations
-import random
-import string
+import secrets
 from datetime import datetime, timezone
 from uuid import UUID
 from typing import Optional
@@ -24,7 +23,7 @@ class RoomService:
     async def _generate_unique_code(self) -> str:
         """Generate a unique 6-character room code."""
         for _ in range(20):
-            code = "".join(random.choices(CODE_CHARS, k=CODE_LENGTH))
+            code = "".join(secrets.choice(CODE_CHARS) for _ in range(CODE_LENGTH))
             result = await self.db.execute(
                 select(Room).where(Room.code == code)
             )
