@@ -15,38 +15,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
-    token: null,
     isLoading: true,
     isNewUser: false,
   });
 
-  // On mount: check for stored token
+  // On mount: check if we have a valid session via httpOnly cookie
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      // Set token on SavesManager immediately
-      SavesManager.setAuthToken(token);
-
-      authApi.getMe()
-        .then((user: User) => {
-          setState({ user, token, isLoading: false, isNewUser: false });
-        })
-        .catch(() => {
-          localStorage.removeItem('auth_token');
-          SavesManager.setAuthToken(null);
-          setState({ user: null, token: null, isLoading: false, isNewUser: false });
-        });
-    } else {
-      setState(prev => ({ ...prev, isLoading: false }));
-    }
+    authApi.getMe()
+      .then((user: User) => {
+        SavesManager.setAuthenticated(true);
+        setState({ user, isLoading: false, isNewUser: false });
+      })
+      .catch(() => {
+        SavesManager.setAuthenticated(false);
+        setState({ user: null, isLoading: false, isNewUser: false });
+      });
   }, []);
 
   // Listen for 401 events from axios interceptor
   useEffect(() => {
     const handleUnauthorized = () => {
-      localStorage.removeItem('auth_token');
-      SavesManager.setAuthToken(null);
-      setState({ user: null, token: null, isLoading: false, isNewUser: false });
+      SavesManager.setAuthenticated(false);
+      setState({ user: null, isLoading: false, isNewUser: false });
     };
     window.addEventListener('auth:unauthorized', handleUnauthorized);
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
@@ -54,20 +44,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (googleCredential: string) => {
     const response = await authApi.loginWithGoogle(googleCredential);
-    localStorage.setItem('auth_token', response.token);
-    SavesManager.setAuthToken(response.token);
+    // Cookie is set by the backend response (httpOnly, not accessible from JS)
+    SavesManager.setAuthenticated(true);
     setState({
       user: response.user,
-      token: response.token,
       isLoading: false,
       isNewUser: response.user.is_new_user,
     });
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('auth_token');
-    SavesManager.setAuthToken(null);
-    setState({ user: null, token: null, isLoading: false, isNewUser: false });
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Cookie may already be gone
+    }
+    SavesManager.setAuthenticated(false);
+    setState({ user: null, isLoading: false, isNewUser: false });
   }, []);
 
   const clearNewUserFlag = useCallback(() => {
@@ -79,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     logout,
     clearNewUserFlag,
-    isAuthenticated: state.user !== null && state.token !== null,
+    isAuthenticated: state.user !== null,
   };
 
   return (

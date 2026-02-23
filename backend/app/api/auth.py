@@ -1,18 +1,28 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status
+import os
+import logging
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.models import User
 from ..dependencies import get_db, get_current_user
 from ..services.auth_service import AuthService
+from ..config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# Cookie settings
+IS_PRODUCTION = bool(os.environ.get("VERCEL"))
+COOKIE_NAME = "auth_token"
+COOKIE_MAX_AGE = settings.JWT_EXPIRY_HOURS * 3600
+
 
 class GoogleLoginRequest(BaseModel):
-    credential: str
+    credential: str = Field(..., max_length=4096)
 
 
 class UserResponse(BaseModel):
@@ -24,19 +34,19 @@ class UserResponse(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    token: str
     user: UserResponse
 
 
 @router.post("/google", response_model=LoginResponse)
-async def google_login(request: GoogleLoginRequest, db: AsyncSession = Depends(get_db)):
+async def google_login(request: GoogleLoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Authenticate with Google ID token."""
     try:
         google_info = AuthService.verify_google_token(request.credential)
-    except Exception as e:
+    except Exception:
+        logger.warning("Failed Google token verification attempt")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid Google token: {e}"
+            detail="Invalid Google token"
         )
 
     # Find or create user
@@ -64,8 +74,18 @@ async def google_login(request: GoogleLoginRequest, db: AsyncSession = Depends(g
 
     token = AuthService.create_jwt(str(user.id), user.email)
 
+    # Set JWT as httpOnly cookie instead of returning in body
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        max_age=COOKIE_MAX_AGE,
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
+        path="/",
+    )
+
     return LoginResponse(
-        token=token,
         user=UserResponse(
             id=str(user.id),
             email=user.email,
@@ -74,6 +94,19 @@ async def google_login(request: GoogleLoginRequest, db: AsyncSession = Depends(g
             is_new_user=is_new_user,
         ),
     )
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    """Clear the auth cookie."""
+    response.delete_cookie(
+        key=COOKIE_NAME,
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
+        path="/",
+    )
+    return {"status": "logged_out"}
 
 
 @router.get("/me", response_model=UserResponse)

@@ -15,7 +15,7 @@ const LEGACY_TIME_PREFIX = 'puzzle-time-';
 
 class SavesManager {
   private static instance: SavesManager;
-  private _authToken: string | null = null;
+  private _isAuthenticated: boolean = false;
 
   private constructor() {
     // Private constructor for singleton
@@ -23,14 +23,14 @@ class SavesManager {
   }
 
   /**
-   * Set auth token to enable API saves (called by AuthContext)
+   * Set authentication state to enable API saves (called by AuthContext)
    */
-  setAuthToken(token: string | null): void {
-    this._authToken = token;
+  setAuthenticated(authenticated: boolean): void {
+    this._isAuthenticated = authenticated;
   }
 
   get isAuthenticated(): boolean {
-    return this._authToken !== null;
+    return this._isAuthenticated;
   }
 
   static getInstance(): SavesManager {
