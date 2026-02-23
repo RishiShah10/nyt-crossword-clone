@@ -29,9 +29,10 @@ const Grid: React.FC = () => {
   const { presenceList, isInRoom, myMember } = useRoom();
   const { user } = useAuth();
 
-  // Local player's highlight/selected colors (in a room, use assigned color; otherwise defaults)
+  // Local player's colors (in a room, use assigned color; otherwise defaults)
   const myHighlightColor = isInRoom && myMember ? HIGHLIGHT_COLORS[myMember.color] : undefined;
   const mySelectedColor = isInRoom && myMember ? SELECTED_COLORS[myMember.color] : undefined;
+  const myCursorColor = isInRoom && myMember ? myMember.color : undefined;
   useKeyboard(); // Enable keyboard navigation
 
   if (!state.grid || !state.clueMap) {
@@ -188,6 +189,7 @@ const Grid: React.FC = () => {
                 remoteSelectedColor={remoteSelColor}
                 myHighlightColor={myHighlightColor}
                 mySelectedColor={mySelectedColor}
+                myCursorColor={myCursorColor}
                 onClick={() => handleCellClick(rowIndex, colIndex)}
                 onChange={(val) => handleCellChange(rowIndex, colIndex, val)}
                 onKeyDown={(e) => handleKeyDown(rowIndex, colIndex, e)}

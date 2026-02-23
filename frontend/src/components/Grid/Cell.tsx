@@ -15,6 +15,7 @@ interface CellProps {
   remoteSelectedColor?: string;
   myHighlightColor?: string;   // Local player's word highlight color (in room mode)
   mySelectedColor?: string;    // Local player's selected cell color (in room mode)
+  myCursorColor?: string;      // Local player's base color for borders/outlines (in room mode)
   onClick: () => void;
   onChange: (value: string) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
@@ -32,6 +33,7 @@ const Cell: React.FC<CellProps> = ({
   remoteSelectedColor,
   myHighlightColor,
   mySelectedColor,
+  myCursorColor,
   onClick,
   onChange,
   onKeyDown,
@@ -71,7 +73,7 @@ const Cell: React.FC<CellProps> = ({
   if (useCustomColors) {
     if (isSelected && mySelectedColor) {
       cellStyle.backgroundColor = mySelectedColor;
-      cellStyle.boxShadow = `inset 0 0 0 2px ${mySelectedColor}`;
+      cellStyle.boxShadow = `inset 0 0 0 2px ${myCursorColor || mySelectedColor}`;
       cellStyle.zIndex = 1;
     } else if (isHighlighted && myHighlightColor) {
       cellStyle.backgroundColor = myHighlightColor;
@@ -111,6 +113,7 @@ const Cell: React.FC<CellProps> = ({
         spellCheck="false"
         aria-label={cell.number ? `Cell ${cell.number}` : 'Cell'}
         aria-invalid={isIncorrect}
+        style={myCursorColor ? { outlineColor: myCursorColor } : undefined}
       />
       {isIncorrect && <div className={styles.cellIncorrectMark} aria-hidden="true" />}
       {isCorrect && <div className={styles.cellCorrectMark} aria-hidden="true" />}
