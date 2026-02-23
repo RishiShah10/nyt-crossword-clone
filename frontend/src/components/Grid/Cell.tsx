@@ -13,6 +13,8 @@ interface CellProps {
   remoteCursors?: RoomPresence[];
   remoteHighlightColor?: string;
   remoteSelectedColor?: string;
+  myHighlightColor?: string;   // Local player's word highlight color (in room mode)
+  mySelectedColor?: string;    // Local player's selected cell color (in room mode)
   onClick: () => void;
   onChange: (value: string) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
@@ -28,6 +30,8 @@ const Cell: React.FC<CellProps> = ({
   remoteCursors = [],
   remoteHighlightColor,
   remoteSelectedColor,
+  myHighlightColor,
+  mySelectedColor,
   onClick,
   onChange,
   onKeyDown,
@@ -45,11 +49,13 @@ const Cell: React.FC<CellProps> = ({
     return <div className={`${styles.cell} ${styles.cellBlack}`} />;
   }
 
+  // In room mode, skip CSS highlight/selected classes — we override with inline colors
+  const useCustomColors = !!(myHighlightColor || mySelectedColor);
   const cellClasses = [
     styles.cell,
     styles.cellWhite,
-    isSelected && styles.cellSelected,
-    isHighlighted && styles.cellHighlighted,
+    isSelected && !useCustomColors && styles.cellSelected,
+    isHighlighted && !useCustomColors && styles.cellHighlighted,
     isIncorrect && styles.cellIncorrect,
     isCorrect && styles.cellCorrect,
     cell.isCircled && styles.cellCircled,
@@ -58,25 +64,38 @@ const Cell: React.FC<CellProps> = ({
     .filter(Boolean)
     .join(' ');
 
+  // Build combined inline style for all color overrides
+  const cellStyle: React.CSSProperties = {};
+
+  // Local player color overrides (room mode)
+  if (useCustomColors) {
+    if (isSelected && mySelectedColor) {
+      cellStyle.backgroundColor = mySelectedColor;
+      cellStyle.boxShadow = `inset 0 0 0 2px ${mySelectedColor}`;
+      cellStyle.zIndex = 1;
+    } else if (isHighlighted && myHighlightColor) {
+      cellStyle.backgroundColor = myHighlightColor;
+    }
+  }
+
   // Remote cursor styling
   const hasRemoteCursor = remoteCursors.length > 0;
   const remoteBorderColor = hasRemoteCursor ? remoteCursors[0].color : undefined;
-  const remoteCursorStyle: React.CSSProperties = {};
   if (hasRemoteCursor) {
-    remoteCursorStyle.boxShadow = `inset 0 0 0 3px ${remoteBorderColor}`;
-    remoteCursorStyle.zIndex = 2;
+    cellStyle.boxShadow = `inset 0 0 0 3px ${remoteBorderColor}`;
+    cellStyle.zIndex = 2;
   }
-  // Remote selected cell: solid color like the local yellow
+  // Remote selected cell: solid color
   if (remoteSelectedColor && hasRemoteCursor) {
-    remoteCursorStyle.backgroundColor = remoteSelectedColor;
+    cellStyle.backgroundColor = remoteSelectedColor;
   }
   // Remote word highlight: pastel tint for the rest of the word
-  else if (remoteHighlightColor) {
-    remoteCursorStyle.backgroundColor = remoteHighlightColor;
+  else if (remoteHighlightColor && !isHighlighted && !isSelected) {
+    cellStyle.backgroundColor = remoteHighlightColor;
   }
 
   return (
-    <div className={cellClasses} onClick={onClick} role="gridcell" style={remoteCursorStyle}>
+    <div className={cellClasses} onClick={onClick} role="gridcell" style={cellStyle}>
       {cell.number && <span className={styles.cellNumber} aria-hidden="true">{cell.number}</span>}
       <input
         ref={inputRef}
