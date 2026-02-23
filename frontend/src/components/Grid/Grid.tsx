@@ -14,10 +14,10 @@ const HIGHLIGHT_COLORS: Record<string, string> = {
   '#E74C3C': '#F5C4C0', // Red
   '#2ECC71': '#B5EDCF', // Green
   '#9B59B6': '#D5BDE6', // Purple
-  '#F39C12': '#FDEAC2', // Orange
-  '#1ABC9C': '#B2EDE4', // Teal
-  '#E91E63': '#F8C4D8', // Pink
-  '#3F51B5': '#C5CAE9', // Indigo
+  '#F39C12': '#FEF0D5', // Orange
+  '#1ABC9C': '#C8F5ED', // Teal
+  '#E91E63': '#FCDCE8', // Pink
+  '#3F51B5': '#D8DCF0', // Indigo
 };
 
 // Selected-cell colors for each player
@@ -26,10 +26,10 @@ const SELECTED_COLORS: Record<string, string> = {
   '#E74C3C': '#F7A59E', // Red → salmon
   '#2ECC71': '#8EE4AF', // Green → mint
   '#9B59B6': '#C9A0DC', // Purple → lavender
-  '#F39C12': '#FDD97A', // Orange → bright gold
-  '#1ABC9C': '#7EDCD2', // Teal → bright teal
-  '#E91E63': '#F48BAE', // Pink → bright pink
-  '#3F51B5': '#9FA8DA', // Indigo → bright indigo
+  '#F39C12': '#FDE6A0', // Orange → soft gold
+  '#1ABC9C': '#A0E8DC', // Teal → soft teal
+  '#E91E63': '#F9B0CB', // Pink → soft pink
+  '#3F51B5': '#B8BFE8', // Indigo → soft indigo
 };
 
 const Grid: React.FC = () => {
