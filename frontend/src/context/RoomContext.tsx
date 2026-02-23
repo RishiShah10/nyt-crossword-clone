@@ -75,6 +75,14 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       case 'puzzle_complete':
         dispatch({ type: 'SET_COMPLETE', payload: true, _fromRemote: true });
         break;
+      case 'color_change':
+        setRoom(prev => prev ? {
+          ...prev,
+          members: prev.members.map(m =>
+            m.userId === event.userId ? { ...m, color: event.color } : m
+          ),
+        } : prev);
+        break;
       case 'state_sync':
         dispatch({
           type: 'LOAD_ROOM_STATE',
@@ -246,10 +254,12 @@ export function RoomProvider({ children }: { children: ReactNode }) {
           m.userId === updatedMember.userId ? { ...m, color: updatedMember.color } : m
         ),
       } : prev);
+      // Broadcast to other players so their RoomBar updates
+      publish({ type: 'color_change', userId: updatedMember.userId, color: updatedMember.color, timestamp: Date.now() });
     } catch (err) {
       console.error('Failed to change color:', err);
     }
-  }, [room]);
+  }, [room, publish]);
 
   const leaveRoom = useCallback(async () => {
     if (!room) return;

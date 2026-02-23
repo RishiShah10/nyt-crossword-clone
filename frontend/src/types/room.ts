@@ -35,4 +35,5 @@ export type RoomEvent =
   | { type: 'clear_checks'; userId: string; timestamp: number }
   | { type: 'timer_toggle'; isPaused: boolean; accumulatedSeconds: number; startedAt: string | null; userId: string; timestamp: number }
   | { type: 'puzzle_complete'; userId: string; timestamp: number }
+  | { type: 'color_change'; userId: string; color: string; timestamp: number }
   | { type: 'state_sync'; userGrid: [string, string][]; checkedCells: [string, boolean][]; accumulatedSeconds: number; isComplete: boolean };
