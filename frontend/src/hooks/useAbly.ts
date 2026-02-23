@@ -116,6 +116,19 @@ export function useAbly({ roomCode, userId, displayName, color, onEvent, onPrese
     };
   }, [roomCode, userId]);
 
+  // Re-send presence when displayName or color change (e.g., after joining a room)
+  useEffect(() => {
+    const channel = channelRef.current;
+    if (!channel || !roomCode) return;
+
+    channel.presence.update({
+      userId,
+      displayName,
+      color,
+      selection: null,
+    });
+  }, [displayName, color, roomCode, userId]);
+
   // Publish an event with rate limiting
   const publish = useCallback((event: RoomEvent) => {
     const channel = channelRef.current;
