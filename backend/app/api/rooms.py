@@ -1,13 +1,16 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from ..dependencies import get_db, get_current_user
 from ..services.room_service import RoomService
 from ..services.ably_service import ably_service
 
 router = APIRouter(prefix="/api/rooms", tags=["rooms"])
+limiter = Limiter(key_func=get_remote_address)
 
 
 class CreateRoomRequest(BaseModel):
@@ -29,7 +32,9 @@ class UpdateStateRequest(BaseModel):
 
 
 @router.post("")
+@limiter.limit("10/minute")
 async def create_room(
+    request: Request,
     body: CreateRoomRequest,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -70,7 +75,9 @@ async def get_room(
 
 
 @router.post("/{code}/join")
+@limiter.limit("10/minute")
 async def join_room(
+    request: Request,
     code: str,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -127,7 +134,9 @@ async def update_color(
 
 
 @router.post("/{code}/token")
+@limiter.limit("20/minute")
 async def get_ably_token(
+    request: Request,
     code: str,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

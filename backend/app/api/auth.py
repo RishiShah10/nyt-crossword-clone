@@ -1,11 +1,13 @@
 from __future__ import annotations
 import os
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
 from typing import Optional
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from ..db.models import User
 from ..dependencies import get_db, get_current_user
 from ..services.auth_service import AuthService
@@ -14,6 +16,7 @@ from ..config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+limiter = Limiter(key_func=get_remote_address)
 
 # Cookie settings
 IS_PRODUCTION = bool(os.environ.get("VERCEL"))
@@ -38,10 +41,11 @@ class LoginResponse(BaseModel):
 
 
 @router.post("/google", response_model=LoginResponse)
-async def google_login(request: GoogleLoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def google_login(request: Request, body: GoogleLoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Authenticate with Google ID token."""
     try:
-        google_info = AuthService.verify_google_token(request.credential)
+        google_info = AuthService.verify_google_token(body.credential)
     except Exception:
         logger.warning("Failed Google token verification attempt")
         raise HTTPException(
