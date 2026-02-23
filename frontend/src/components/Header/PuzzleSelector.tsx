@@ -8,6 +8,7 @@ const PuzzleSelector: React.FC = () => {
   const { state, dispatch } = usePuzzle();
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isMiniMode, setIsMiniMode] = useState(false);
 
   const MIN_DATE = '2010-01-01';
   const MAX_DATE = new Date().toISOString().split('T')[0];
@@ -42,7 +43,9 @@ const PuzzleSelector: React.FC = () => {
     setIsLoading(true);
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await puzzleApi.getPuzzleByDate(newDate);
+      const response = isMiniMode
+        ? await puzzleApi.getMiniPuzzleByDate(newDate)
+        : await puzzleApi.getPuzzleByDate(newDate);
       dispatch({
         type: 'SET_PUZZLE',
         payload: {
@@ -101,7 +104,9 @@ const PuzzleSelector: React.FC = () => {
     setIsLoading(true);
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await puzzleApi.getTodaysLivePuzzle();
+      const response = isMiniMode
+        ? await puzzleApi.getTodaysMiniPuzzle()
+        : await puzzleApi.getTodaysLivePuzzle();
       dispatch({
         type: 'SET_PUZZLE',
         payload: {
@@ -132,6 +137,20 @@ const PuzzleSelector: React.FC = () => {
   return (
     <div className={styles.puzzleSelector} role="region" aria-label="Puzzle selection">
       <div className={styles.selectorGroup}>
+        <div className={styles.toggleWrapper}>
+          <span
+            className={`${styles.toggleLabel} ${!isMiniMode ? styles.active : ''}`}
+            onClick={() => setIsMiniMode(false)}
+          >
+            Daily
+          </span>
+          <span
+            className={`${styles.toggleLabel} ${isMiniMode ? styles.active : ''}`}
+            onClick={() => setIsMiniMode(true)}
+          >
+            Mini
+          </span>
+        </div>
         <div className={styles.dateWrapper}>
           <span className={styles.dateIcon}>📅</span>
           <input
@@ -158,9 +177,9 @@ const PuzzleSelector: React.FC = () => {
           className={styles.randomBtn}
           onClick={handleTodaysPuzzle}
           disabled={isLoading}
-          aria-label="Load today's NYT puzzle"
+          aria-label={isMiniMode ? "Load today's mini puzzle" : "Load today's NYT puzzle"}
         >
-          📰 Today's NYT
+          {isMiniMode ? "📰 Today's Mini" : "📰 Today's NYT"}
         </button>
       </div>
     </div>

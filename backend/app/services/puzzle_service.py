@@ -86,11 +86,12 @@ class PuzzleService:
             print(f"Unexpected error fetching puzzle for {date}: {e}")
             return None
 
-    async def get_puzzle(self, date: str) -> Optional[Puzzle]:
+    async def get_puzzle(self, date: str, puzzle_type: str = "daily") -> Optional[Puzzle]:
         """Get puzzle for a specific date.
 
         Args:
             date: Date string in YYYY-MM-DD format
+            puzzle_type: "daily" or "mini"
 
         Returns:
             Puzzle model if found, None otherwise
@@ -108,15 +109,21 @@ class PuzzleService:
             logger.info("Invalid date format: %s", date)
             return None
 
-        # Try cache first
-        puzzle_data = self.cache_service.get(date)
+        # Mini puzzles always come from NYT API (no GitHub archive)
+        if puzzle_type == "mini":
+            if not self.nyt_service:
+                return None
+            puzzle_data = await self._fetch_from_nyt(date, puzzle_type="mini")
+        else:
+            # Try cache first
+            puzzle_data = self.cache_service.get(date)
 
-        # Fetch from source if not cached
-        if puzzle_data is None:
-            if date_obj >= NYT_CUTOVER and self.nyt_service:
-                puzzle_data = await self._fetch_from_nyt(date)
-            else:
-                puzzle_data = await self._fetch_from_github(date)
+            # Fetch from source if not cached
+            if puzzle_data is None:
+                if date_obj >= NYT_CUTOVER and self.nyt_service:
+                    puzzle_data = await self._fetch_from_nyt(date)
+                else:
+                    puzzle_data = await self._fetch_from_github(date)
 
         # Parse and return puzzle
         if puzzle_data:
@@ -132,7 +139,7 @@ class PuzzleService:
 
         return None
 
-    async def _fetch_from_nyt(self, date: str) -> Optional[dict]:
+    async def _fetch_from_nyt(self, date: str, puzzle_type: str = "daily") -> Optional[dict]:
         """Fetch puzzle from the NYT v6 API.
 
         Raises:
@@ -141,8 +148,8 @@ class PuzzleService:
         from .nyt_service import NytAuthError, NytApiError
 
         try:
-            puzzle_data = await self.nyt_service.fetch_puzzle(date)
-            if puzzle_data:
+            puzzle_data = await self.nyt_service.fetch_puzzle(date, puzzle_type=puzzle_type)
+            if puzzle_data and puzzle_type == "daily":
                 self.cache_service.set(date, puzzle_data)
             return puzzle_data
         except NytAuthError:
@@ -159,6 +166,15 @@ class PuzzleService:
         """
         today = datetime.now().strftime("%Y-%m-%d")
         return await self.get_puzzle(today)
+
+    async def get_todays_mini(self) -> Optional[Puzzle]:
+        """Get today's mini NYT puzzle.
+
+        Raises:
+            NytAuthError: Re-raised if cookie is invalid.
+        """
+        today = datetime.now().strftime("%Y-%m-%d")
+        return await self.get_puzzle(today, puzzle_type="mini")
 
     async def get_random_puzzle(self) -> Optional[Puzzle]:
         """Get a random puzzle from the available date range.

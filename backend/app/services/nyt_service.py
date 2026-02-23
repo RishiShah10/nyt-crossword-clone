@@ -7,7 +7,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-NYT_API_BASE = "https://www.nytimes.com/svc/crosswords/v6/puzzle/daily"
+NYT_API_BASE = "https://www.nytimes.com/svc/crosswords/v6/puzzle"
 DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
@@ -34,11 +34,12 @@ class NytService:
     async def close(self):
         await self.http_client.aclose()
 
-    async def fetch_puzzle(self, date: str) -> Optional[dict]:
+    async def fetch_puzzle(self, date: str, puzzle_type: str = "daily") -> Optional[dict]:
         """Fetch a puzzle from the NYT API and convert to doshea format.
 
         Args:
             date: Date string in YYYY-MM-DD format
+            puzzle_type: "daily" or "mini"
 
         Returns:
             Puzzle data dict in doshea/archive format, or None if not found.
@@ -54,7 +55,7 @@ class NytService:
             await asyncio.sleep(1.0 - elapsed)
         self._last_request_time = asyncio.get_event_loop().time()
 
-        url = f"{NYT_API_BASE}/{date}.json"
+        url = f"{NYT_API_BASE}/{puzzle_type}/{date}.json"
         try:
             response = await self.http_client.get(url)
         except httpx.RequestError as e:

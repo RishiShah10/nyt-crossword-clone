@@ -74,6 +74,59 @@ async def get_todays_live_puzzle():
     return PuzzleResponse(puzzle=puzzle, puzzle_id=puzzle_id)
 
 
+@router.get("/today/mini", response_model=PuzzleResponse)
+async def get_todays_mini_puzzle():
+    """Get today's mini NYT puzzle (requires NYT_COOKIE)."""
+    if nyt_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="NYT live puzzles are not configured. Set NYT_COOKIE env var."
+        )
+
+    try:
+        puzzle = await puzzle_service.get_todays_mini()
+    except NytAuthError:
+        raise HTTPException(
+            status_code=403,
+            detail="NYT subscription cookie is invalid or expired"
+        )
+
+    if puzzle is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Today's mini puzzle not found"
+        )
+
+    puzzle_id = puzzle.date if puzzle.date else "unknown"
+    return PuzzleResponse(puzzle=puzzle, puzzle_id=puzzle_id)
+
+
+@router.get("/mini/{date}", response_model=PuzzleResponse)
+async def get_mini_puzzle_by_date(date: str):
+    """Get a mini crossword puzzle by date (requires NYT_COOKIE)."""
+    if nyt_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="NYT live puzzles are not configured. Set NYT_COOKIE env var."
+        )
+
+    try:
+        puzzle = await puzzle_service.get_puzzle(date, puzzle_type="mini")
+    except NytAuthError:
+        raise HTTPException(
+            status_code=403,
+            detail="NYT subscription cookie is invalid or expired"
+        )
+
+    if puzzle is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Mini puzzle not found for date {date}"
+        )
+
+    return PuzzleResponse(puzzle=puzzle, puzzle_id=date)
+
+
 @router.get("/{date}", response_model=PuzzleResponse)
 async def get_puzzle_by_date(date: str):
     """Get a crossword puzzle by date (2010-present if NYT_COOKIE is set)."""
