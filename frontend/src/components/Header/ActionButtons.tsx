@@ -7,7 +7,6 @@ import Modal from './Modal';
 
 interface ActionButtonsProps {
   onOpenLibrary?: () => void;
-  onLoadRandom?: () => void;
 }
 
 interface ModalState {
@@ -26,7 +25,7 @@ const MODAL_CLOSED: ModalState = {
   variant: 'info',
 };
 
-const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRandom }) => {
+const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary }) => {
   const { state, dispatch } = usePuzzle();
   const [showSaved, setShowSaved] = useState(false);
   const [showRevealMenu, setShowRevealMenu] = useState(false);
@@ -421,17 +420,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
             aria-label="Open puzzle library"
           >
             📚 Library
-          </button>
-        )}
-
-        {onLoadRandom && (
-          <button
-            className="btn btn-library"
-            onClick={onLoadRandom}
-            title="Load a random puzzle"
-            aria-label="Load a random puzzle"
-          >
-            🎲 Random
           </button>
         )}
 
