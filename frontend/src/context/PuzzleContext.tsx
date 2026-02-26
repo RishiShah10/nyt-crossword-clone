@@ -18,6 +18,8 @@ interface PuzzleState {
   selection: Selection | null;
   highlightedCells: Set<string>;  // "row,col"
   checkedCells: Map<string, boolean>;  // "row,col" -> isCorrect
+  pencilCells: Set<string>;  // "row,col" — cells entered in pencil mode
+  isPencilMode: boolean;
   elapsedSeconds: number;
   isComplete: boolean;
   isPaused: boolean;
@@ -43,6 +45,7 @@ type PuzzleAction =
   | { type: 'RESET_TIMER' }
   | { type: 'TOGGLE_PAUSE' }
   | { type: 'CLEAR_GRID' }
+  | { type: 'TOGGLE_PENCIL' }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_COLLABORATIVE'; payload: { isCollaborative: boolean; collaborativeDispatch?: CollaborativeDispatchFn; roomTimerData?: { accumulatedSeconds: number; timerStartedAt: string | null; isPaused: boolean } } }
@@ -57,9 +60,10 @@ const throttledTimerSave = throttle(
     checkedCells: Map<string, boolean>,
     elapsedSeconds: number,
     isComplete: boolean,
-    puzzle: Puzzle
+    puzzle: Puzzle,
+    pencilCells?: Set<string>
   ) => {
-    SavesManager.savePuzzleProgress(puzzleId, userGrid, checkedCells, elapsedSeconds, isComplete, puzzle);
+    SavesManager.savePuzzleProgress(puzzleId, userGrid, checkedCells, elapsedSeconds, isComplete, puzzle, pencilCells);
   },
   10000 // 10 seconds
 );
@@ -74,6 +78,8 @@ const initialState: PuzzleState = {
   selection: null,
   highlightedCells: new Set(),
   checkedCells: new Map(),
+  pencilCells: new Set(),
+  isPencilMode: false,
   elapsedSeconds: 0,
   isComplete: false,
   isPaused: false,
@@ -94,6 +100,7 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
 
       let userGrid = new Map<string, string>();
       let checkedCells = new Map<string, boolean>();
+      let pencilCells = new Set<string>();
       let elapsedSeconds = 0;
       let isComplete = false;
 
@@ -104,6 +111,9 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         if (saveData) {
           userGrid = new Map(saveData.userGrid);
           checkedCells = new Map(saveData.checkedCells);
+          if (saveData.pencilCells) {
+            pencilCells = new Set(saveData.pencilCells);
+          }
           elapsedSeconds = saveData.elapsedSeconds;
           isComplete = saveData.isComplete;
         } else {
@@ -148,6 +158,8 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         clueMap,
         userGrid,
         checkedCells,
+        pencilCells,
+        isPencilMode: false,
         elapsedSeconds,
         isComplete,
         selection: initialSelection,
@@ -161,11 +173,18 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
       const { row, col, value, _fromRemote } = action.payload;
       const key = `${row},${col}`;
       const newUserGrid = new Map(state.userGrid);
+      const newPencilCells = new Set(state.pencilCells);
 
       if (value === '') {
         newUserGrid.delete(key);
+        newPencilCells.delete(key);
       } else {
         newUserGrid.set(key, value.toUpperCase());
+        if (state.isPencilMode && !_fromRemote) {
+          newPencilCells.add(key);
+        } else if (!_fromRemote) {
+          newPencilCells.delete(key);
+        }
       }
 
       // In collaborative mode, broadcast the edit (skip if this came from a remote user)
@@ -181,12 +200,13 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
           state.checkedCells,
           state.elapsedSeconds,
           state.isComplete,
-          state.puzzle
+          state.puzzle,
+          newPencilCells
         );
       }
 
       // Auto-resume timer when typing
-      return { ...state, userGrid: newUserGrid, isPaused: false };
+      return { ...state, userGrid: newUserGrid, pencilCells: newPencilCells, isPaused: false };
     }
 
     case 'SET_SELECTION': {
@@ -292,7 +312,8 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
           state.checkedCells,
           newTime,
           state.isComplete,
-          state.puzzle
+          state.puzzle,
+          state.pencilCells
         );
       }
 
@@ -327,8 +348,13 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         ...state,
         userGrid: new Map(),
         checkedCells: new Map(),
+        pencilCells: new Set(),
         isComplete: false,
       };
+    }
+
+    case 'TOGGLE_PENCIL': {
+      return { ...state, isPencilMode: !state.isPencilMode };
     }
 
     case 'SET_LOADING': {

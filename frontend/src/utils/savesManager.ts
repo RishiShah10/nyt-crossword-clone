@@ -49,7 +49,8 @@ class SavesManager {
     checkedCells: Map<string, boolean>,
     elapsedSeconds: number,
     isComplete: boolean,
-    puzzle: Puzzle
+    puzzle: Puzzle,
+    pencilCells?: Set<string>
   ): void {
     try {
       // Calculate metadata
@@ -65,6 +66,7 @@ class SavesManager {
         puzzleId,
         userGrid: Array.from(userGrid.entries()),
         checkedCells: Array.from(checkedCells.entries()),
+        pencilCells: pencilCells ? Array.from(pencilCells) : undefined,
         elapsedSeconds,
         isComplete,
         lastPlayed: now,
@@ -125,9 +127,10 @@ class SavesManager {
       checkedCells: Map<string, boolean>,
       elapsedSeconds: number,
       isComplete: boolean,
-      puzzle: Puzzle
+      puzzle: Puzzle,
+      pencilCells?: Set<string>
     ) => {
-      this.savePuzzleProgress(puzzleId, userGrid, checkedCells, elapsedSeconds, isComplete, puzzle);
+      this.savePuzzleProgress(puzzleId, userGrid, checkedCells, elapsedSeconds, isComplete, puzzle, pencilCells);
     },
     500
   );

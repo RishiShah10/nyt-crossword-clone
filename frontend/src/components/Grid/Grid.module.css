@@ -110,6 +110,12 @@
   z-index: 3;
 }
 
+/* Pencil (draft) entries */
+.cellPencil .cellInput {
+  color: #888888 !important;
+  font-weight: 400;
+}
+
 /* Circled and Shaded */
 .cellCircled {
   border-radius: 0;

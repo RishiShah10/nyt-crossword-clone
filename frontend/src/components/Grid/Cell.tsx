@@ -10,6 +10,7 @@ interface CellProps {
   isHighlighted: boolean;
   isIncorrect: boolean;
   isCorrect: boolean;
+  isPencil: boolean;
   remoteCursors?: RoomPresence[];
   remoteHighlightColor?: string;
   remoteSelectedColor?: string;
@@ -28,6 +29,7 @@ const Cell: React.FC<CellProps> = ({
   isHighlighted,
   isIncorrect,
   isCorrect,
+  isPencil,
   remoteCursors = [],
   remoteHighlightColor,
   remoteSelectedColor,
@@ -60,6 +62,7 @@ const Cell: React.FC<CellProps> = ({
     isHighlighted && !useCustomColors && styles.cellHighlighted,
     isIncorrect && styles.cellIncorrect,
     isCorrect && styles.cellCorrect,
+    isPencil && styles.cellPencil,
     cell.isCircled && styles.cellCircled,
     cell.isShaded && styles.cellShaded,
   ]

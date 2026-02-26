@@ -265,7 +265,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
         state.checkedCells,
         state.elapsedSeconds,
         state.isComplete,
-        state.puzzle
+        state.puzzle,
+        state.pencilCells
       );
       setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2000);
@@ -279,6 +280,16 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
   return (
     <>
       <div className="action-buttons" role="toolbar" aria-label="Puzzle actions">
+        <button
+          className={`btn btn-pencil ${state.isPencilMode ? 'btn-pencil-active' : ''}`}
+          onClick={() => dispatch({ type: 'TOGGLE_PENCIL' })}
+          title="Pencil mode — draft guesses shown in gray"
+          aria-label={state.isPencilMode ? 'Disable pencil mode' : 'Enable pencil mode'}
+          aria-pressed={state.isPencilMode}
+        >
+          {state.isPencilMode ? '✏️ Pencil ON' : '✏️ Pencil'}
+        </button>
+
         <div className="reveal-dropdown" ref={checkMenuRef}>
           <button
             className="btn btn-check"

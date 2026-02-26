@@ -194,6 +194,7 @@ const Grid: React.FC = () => {
             const isHighlighted = state.highlightedCells.has(cellKey);
             const isIncorrect = checkedCells.get(cellKey) === false;
             const isCorrect = checkedCells.get(cellKey) === true;
+            const isPencil = state.pencilCells.has(cellKey);
 
             const remoteCursors = remoteCursorMap.get(cellKey) || [];
             // Only show remote highlight/selected if this cell isn't in the local user's word
@@ -213,6 +214,7 @@ const Grid: React.FC = () => {
                 isHighlighted={isHighlighted}
                 isIncorrect={isIncorrect}
                 isCorrect={isCorrect}
+                isPencil={isPencil}
                 remoteCursors={remoteCursors}
                 remoteHighlightColor={remoteHlColor}
                 remoteSelectedColor={remoteSelColor}

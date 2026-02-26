@@ -24,6 +24,7 @@ export interface SaveData {
   puzzleId: string;
   userGrid: [string, string][];
   checkedCells: [string, boolean][];
+  pencilCells?: string[];  // cell keys in pencil mode
   elapsedSeconds: number;
   isComplete: boolean;
   lastPlayed: string;

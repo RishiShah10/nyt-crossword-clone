@@ -227,6 +227,13 @@ export function useKeyboard() {
         return;
       }
 
+      // Period toggles pencil mode
+      if (e.key === '.') {
+        e.preventDefault();
+        dispatch({ type: 'TOGGLE_PENCIL' });
+        return;
+      }
+
       // Letter input - fill cell and advance
       if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
         e.preventDefault();
