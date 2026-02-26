@@ -34,7 +34,7 @@ interface PuzzleState {
 // Action types
 type PuzzleAction =
   | { type: 'SET_PUZZLE'; payload: { puzzle: Puzzle; puzzleId: string } }
-  | { type: 'SET_CELL_VALUE'; payload: { row: number; col: number; value: string; _fromRemote?: boolean } }
+  | { type: 'SET_CELL_VALUE'; payload: { row: number; col: number; value: string; _fromRemote?: boolean; _forceCommit?: boolean } }
   | { type: 'SET_SELECTION'; payload: Selection | null }
   | { type: 'SET_HIGHLIGHTED_CELLS'; payload: Set<string> }
   | { type: 'TOGGLE_DIRECTION' }
@@ -170,7 +170,7 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
     }
 
     case 'SET_CELL_VALUE': {
-      const { row, col, value, _fromRemote } = action.payload;
+      const { row, col, value, _fromRemote, _forceCommit } = action.payload;
       const key = `${row},${col}`;
       const newUserGrid = new Map(state.userGrid);
       const newPencilCells = new Set(state.pencilCells);
@@ -180,7 +180,10 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         newPencilCells.delete(key);
       } else {
         newUserGrid.set(key, value.toUpperCase());
-        if (state.isPencilMode && !_fromRemote) {
+        if (_forceCommit) {
+          // Reveals and other forced writes always commit (non-pencil)
+          newPencilCells.delete(key);
+        } else if (state.isPencilMode && !_fromRemote) {
           newPencilCells.add(key);
         } else if (!_fromRemote) {
           newPencilCells.delete(key);

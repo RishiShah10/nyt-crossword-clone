@@ -5,7 +5,8 @@ import type { Puzzle } from '../types/puzzle';
  */
 export function validatePuzzle(
   puzzle: Puzzle,
-  userGrid: Map<string, string>
+  userGrid: Map<string, string>,
+  pencilCells?: Set<string>
 ): {
   isComplete: boolean;
   isAllCorrect: boolean;
@@ -27,6 +28,9 @@ export function validatePuzzle(
       totalWhiteCells++;
       const cellKey = `${row},${col}`;
       const userLetter = userGrid.get(cellKey) || '';
+
+      // Pencil cells don't count as filled and aren't checked
+      if (pencilCells?.has(cellKey)) continue;
 
       if (userLetter) {
         filledCells++;

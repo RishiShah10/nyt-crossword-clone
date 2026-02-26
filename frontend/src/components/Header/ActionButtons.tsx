@@ -76,8 +76,15 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
     }
 
     const { row, col } = state.selection;
+    const cellKey = `${row},${col}`;
+
+    if (state.pencilCells.has(cellKey)) {
+      showInfo('Pencil Entry', 'This is a draft entry. Commit it first by typing over it without pencil mode.');
+      return;
+    }
+
     const correctLetter = getCorrectLetter(state.puzzle!, row, col);
-    const userLetter = state.userGrid.get(`${row},${col}`) || '';
+    const userLetter = state.userGrid.get(cellKey) || '';
 
     if (!userLetter) {
       showInfo('Empty Cell', 'This cell is empty. Fill in a letter first.');
@@ -115,8 +122,11 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
     let incorrectCount = 0;
 
     cells.forEach(cell => {
+      const cellKey = `${cell.row},${cell.col}`;
+      // Skip pencil cells
+      if (state.pencilCells.has(cellKey)) return;
       const correctLetter = getCorrectLetter(state.puzzle!, cell.row, cell.col);
-      const userLetter = state.userGrid.get(`${cell.row},${cell.col}`) || '';
+      const userLetter = state.userGrid.get(cellKey) || '';
       if (userLetter) {
         const isCorrect = userLetter === correctLetter;
         dispatch({
@@ -135,7 +145,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
   };
 
   const handleCheckPuzzle = () => {
-    const result = validatePuzzle(state.puzzle!, state.userGrid);
+    const result = validatePuzzle(state.puzzle!, state.userGrid, state.pencilCells);
 
     result.incorrectCells.forEach(cellKey => {
       dispatch({
@@ -171,7 +181,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
 
     dispatch({
       type: 'SET_CELL_VALUE',
-      payload: { row, col, value: correctLetter },
+      payload: { row, col, value: correctLetter, _forceCommit: true },
     });
 
     dispatch({
@@ -204,7 +214,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
           const correctLetter = getCorrectLetter(state.puzzle!, cell.row, cell.col);
           dispatch({
             type: 'SET_CELL_VALUE',
-            payload: { row: cell.row, col: cell.col, value: correctLetter },
+            payload: { row: cell.row, col: cell.col, value: correctLetter, _forceCommit: true },
           });
           dispatch({
             type: 'CHECK_CELL',
@@ -227,7 +237,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary, onLoadRand
           const [r, c] = cellKey.split(',').map(Number);
           dispatch({
             type: 'SET_CELL_VALUE',
-            payload: { row: r, col: c, value: letter },
+            payload: { row: r, col: c, value: letter, _forceCommit: true },
           });
         });
         dispatch({ type: 'CLEAR_CHECKS' });
