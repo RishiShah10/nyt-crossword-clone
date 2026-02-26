@@ -5,6 +5,7 @@ import { useRoom } from '../../context/RoomContext';
 import { useAuth } from '../../context/AuthContext';
 import Cell from './Cell';
 import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
+import { getNextCellInWordOrNextWord } from '../../utils/navigationUtils';
 import styles from './Grid.module.css';
 import type { RoomPresence } from '../../types/room';
 
@@ -109,8 +110,33 @@ const Grid: React.FC = () => {
       dispatch({ type: 'TOGGLE_DIRECTION' });
       updateHighlightedCells(row, col, selection.direction === 'across' ? 'down' : 'across');
     } else {
-      // Select new cell, default to across
-      const direction = 'across';
+      // Select new cell, try to maintain current direction if valid
+      // Otherwise fall back to the other direction, or across as last resort
+      let direction: 'across' | 'down' = 'across';
+
+      if (selection) {
+        // Try to use current direction
+        const currentDirClue = getClueKeyForCell(grid, row, col, selection.direction, clueMap);
+        if (currentDirClue) {
+          direction = selection.direction;
+        } else {
+          // Current direction not valid, try the opposite
+          const oppositeDirClue = getClueKeyForCell(grid, row, col, selection.direction === 'across' ? 'down' : 'across', clueMap);
+          if (oppositeDirClue) {
+            direction = selection.direction === 'across' ? 'down' : 'across';
+          }
+        }
+      } else {
+        // No previous selection, prefer across, fall back to down
+        const acrossClue = getClueKeyForCell(grid, row, col, 'across', clueMap);
+        if (!acrossClue) {
+          const downClue = getClueKeyForCell(grid, row, col, 'down', clueMap);
+          if (downClue) {
+            direction = 'down';
+          }
+        }
+      }
+
       dispatch({
         type: 'SET_SELECTION',
         payload: { row, col, direction, clueNumber: cell.number },
@@ -132,22 +158,18 @@ const Grid: React.FC = () => {
     dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
   };
 
-  // Handle cell value change (now handled by useKeyboard hook, kept for mouse input only)
-  const handleCellChange = (row: number, col: number, value: string) => {
-    // This is mainly for mobile/touch input
-    // Desktop keyboard input is handled by useKeyboard hook
-    if (!value) {
-      dispatch({
-        type: 'SET_CELL_VALUE',
-        payload: { row, col, value },
-      });
-    }
+  // Handle cell value change
+  const handleCellChange = (_row: number, _col: number, _value: string) => {
+    // All input is handled by useKeyboard hook via keydown events
+    // This onChange is effectively disabled to prevent double-entry
+    // Mobile keyboards still work because useKeyboard processes their keydown events
   };
 
-  // Handle keyboard events on individual cells (now mostly handled globally)
+  // Handle keyboard events on individual cells
   const handleKeyDown = (_row: number, _col: number, e: React.KeyboardEvent) => {
-    // Most keyboard handling is done by useKeyboard hook
-    // This is kept for any cell-specific handling
+    // Prevent default on ALL keys to stop onChange from firing
+    // The useKeyboard hook will handle all input via window listener
+    // This prevents double-entry where both handlers try to process the same keystroke
     e.preventDefault();
   };
 

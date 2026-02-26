@@ -149,6 +149,76 @@ export function useKeyboard() {
         return;
       }
 
+      // Delete - clear current cell without moving
+      if (e.key === 'Delete') {
+        e.preventDefault();
+        dispatch({
+          type: 'SET_CELL_VALUE',
+          payload: { row, col, value: '' },
+        });
+        return;
+      }
+
+      // Enter - toggle direction (same as Space)
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        dispatch({ type: 'TOGGLE_DIRECTION' });
+
+        // Update highlighted cells with new direction
+        const newDirection = direction === 'across' ? 'down' : 'across';
+        const clueKey = getClueKeyForCell(grid, row, col, newDirection, clueMap);
+        if (clueKey) {
+          const cells = getCellsForClue(clueKey, clueMap);
+          const highlighted = new Set(cells.map(c => `${c.row},${c.col}`));
+          dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
+        }
+        return;
+      }
+
+      // Home - go to first cell of current word
+      if (e.key === 'Home') {
+        e.preventDefault();
+        const clueKey = getClueKeyForCell(grid, row, col, direction, clueMap);
+        if (clueKey) {
+          const cells = getCellsForClue(clueKey, clueMap);
+          if (cells.length > 0) {
+            const firstCell = cells[0];
+            dispatch({
+              type: 'SET_SELECTION',
+              payload: {
+                row: firstCell.row,
+                col: firstCell.col,
+                direction,
+                clueNumber: grid[firstCell.row][firstCell.col].number,
+              },
+            });
+          }
+        }
+        return;
+      }
+
+      // End - go to last cell of current word
+      if (e.key === 'End') {
+        e.preventDefault();
+        const clueKey = getClueKeyForCell(grid, row, col, direction, clueMap);
+        if (clueKey) {
+          const cells = getCellsForClue(clueKey, clueMap);
+          if (cells.length > 0) {
+            const lastCell = cells[cells.length - 1];
+            dispatch({
+              type: 'SET_SELECTION',
+              payload: {
+                row: lastCell.row,
+                col: lastCell.col,
+                direction,
+                clueNumber: grid[lastCell.row][lastCell.col].number,
+              },
+            });
+          }
+        }
+        return;
+      }
+
       // Letter input - fill cell and advance
       if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
         e.preventDefault();

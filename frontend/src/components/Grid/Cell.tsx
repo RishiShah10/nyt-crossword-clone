@@ -111,6 +111,7 @@ const Cell: React.FC<CellProps> = ({
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck="false"
+        inputMode="text"
         aria-label={cell.number ? `Cell ${cell.number}` : 'Cell'}
         aria-invalid={isIncorrect}
         style={myCursorColor ? { outlineColor: myCursorColor } : undefined}
