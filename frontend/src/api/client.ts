@@ -37,6 +37,11 @@ export const puzzleApi = {
     return response.data;
   },
 
+  async getRandomMiniPuzzle(): Promise<PuzzleResponse> {
+    const response = await apiClient.get<PuzzleResponse>('/api/puzzles/random/mini');
+    return response.data;
+  },
+
   async getTodayHistorical(): Promise<PuzzleResponse> {
     const response = await apiClient.get<PuzzleResponse>('/api/puzzles/today/historical');
     return response.data;

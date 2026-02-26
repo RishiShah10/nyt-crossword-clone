@@ -128,6 +128,11 @@
   background: #2196f3;
 }
 
+.toggleDisabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 /* Responsive - Tablet */
 @media (max-width: 899px) {
   .selectorGroup {

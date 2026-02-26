@@ -196,6 +196,29 @@ class PuzzleService:
 
         return None
 
+    async def get_random_mini(self) -> Optional[Puzzle]:
+        """Get a random mini puzzle from the last 2 years.
+
+        Returns:
+            Random mini puzzle if successful, None otherwise
+
+        Raises:
+            NytAuthError: Re-raised if cookie is invalid.
+        """
+        today = datetime.now()
+        min_mini_date = today - timedelta(days=730)
+
+        for _ in range(10):
+            random_days = random.randint(0, (today - min_mini_date).days)
+            random_date = min_mini_date + timedelta(days=random_days)
+            date_str = random_date.strftime("%Y-%m-%d")
+
+            puzzle = await self.get_puzzle(date_str, puzzle_type="mini")
+            if puzzle:
+                return puzzle
+
+        return None
+
     async def get_today_historical_puzzle(self) -> Optional[Puzzle]:
         """Get today's historical puzzle (same month/day from a past year).
 

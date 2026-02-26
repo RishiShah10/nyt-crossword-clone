@@ -78,7 +78,9 @@ const PuzzleSelector: React.FC = () => {
     setIsLoading(true);
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await puzzleApi.getRandomPuzzle();
+      const response = isMiniMode
+        ? await puzzleApi.getRandomMiniPuzzle()
+        : await puzzleApi.getRandomPuzzle();
       dispatch({
         type: 'SET_PUZZLE',
         payload: {
@@ -137,16 +139,16 @@ const PuzzleSelector: React.FC = () => {
   return (
     <div className={styles.puzzleSelector} role="region" aria-label="Puzzle selection">
       <div className={styles.selectorGroup}>
-        <div className={styles.toggleWrapper}>
+        <div className={`${styles.toggleWrapper} ${isLoading ? styles.toggleDisabled : ''}`}>
           <span
             className={`${styles.toggleLabel} ${!isMiniMode ? styles.active : ''}`}
-            onClick={() => setIsMiniMode(false)}
+            onClick={() => !isLoading && setIsMiniMode(false)}
           >
             Daily
           </span>
           <span
             className={`${styles.toggleLabel} ${isMiniMode ? styles.active : ''}`}
-            onClick={() => setIsMiniMode(true)}
+            onClick={() => !isLoading && setIsMiniMode(true)}
           >
             Mini
           </span>

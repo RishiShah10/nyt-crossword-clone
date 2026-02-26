@@ -33,6 +33,33 @@ async def get_random_puzzle():
     return PuzzleResponse(puzzle=puzzle, puzzle_id=puzzle_id)
 
 
+@router.get("/random/mini", response_model=PuzzleResponse)
+async def get_random_mini_puzzle():
+    """Get a random mini crossword puzzle (requires NYT_COOKIE)."""
+    if nyt_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="NYT live puzzles are not configured. Set NYT_COOKIE env var."
+        )
+
+    try:
+        puzzle = await puzzle_service.get_random_mini()
+    except NytAuthError:
+        raise HTTPException(
+            status_code=403,
+            detail="NYT subscription cookie is invalid or expired"
+        )
+
+    if puzzle is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to fetch random mini puzzle"
+        )
+
+    puzzle_id = puzzle.date if puzzle.date else "unknown"
+    return PuzzleResponse(puzzle=puzzle, puzzle_id=puzzle_id)
+
+
 @router.get("/today/historical", response_model=PuzzleResponse)
 async def get_today_historical():
     """Get today's historical puzzle (same month/day from a past year)."""
