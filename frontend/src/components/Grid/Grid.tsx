@@ -5,7 +5,6 @@ import { useRoom } from '../../context/RoomContext';
 import { useAuth } from '../../context/AuthContext';
 import Cell from './Cell';
 import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
-import { getNextCellInWordOrNextWord } from '../../utils/navigationUtils';
 import styles from './Grid.module.css';
 import type { RoomPresence } from '../../types/room';
 
