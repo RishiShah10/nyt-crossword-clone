@@ -13,7 +13,7 @@ const PuzzleSelector: React.FC = () => {
   const [isMiniMode, setIsMiniMode] = useState(false);
 
   const MIN_DATE = '2010-01-01';
-  const MAX_DATE = new Date().toISOString().split('T')[0];
+  const MAX_DATE = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
   // Sync selectedDate with loaded puzzle
   useEffect(() => {
@@ -111,7 +111,7 @@ const PuzzleSelector: React.FC = () => {
         ? await puzzleApi.getTodaysMiniPuzzle()
         : await puzzleApi.getTodaysLivePuzzle();
       await applyPuzzle(response.puzzle, response.puzzle_id);
-      setSelectedDate(new Date().toISOString().split('T')[0]);
+      setSelectedDate(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }));
     } catch (error) {
       let message = "Failed to load today's puzzle.";
       if (axios.isAxiosError(error)) {

@@ -2,6 +2,7 @@ import httpx
 import logging
 import random
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Optional, TYPE_CHECKING
 from ..models.puzzle import Puzzle
 from .cache_service import CacheService
@@ -13,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 # Boundary date: 2019-01-01+ uses NYT API, before uses GitHub archive
 NYT_CUTOVER = datetime(2019, 1, 1)
+
+PACIFIC = ZoneInfo("America/Los_Angeles")
 
 
 class PuzzleService:
@@ -33,7 +36,7 @@ class PuzzleService:
         self.min_date = datetime(2010, 1, 1)
         # Extend max_date to today if NYT service is available
         if self.nyt_service:
-            self.max_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            self.max_date = datetime.now(PACIFIC).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
         else:
             self.max_date = datetime(2018, 12, 31)
 
@@ -164,7 +167,7 @@ class PuzzleService:
         Raises:
             NytAuthError: Re-raised if cookie is invalid.
         """
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = datetime.now(PACIFIC).strftime("%Y-%m-%d")
         return await self.get_puzzle(today)
 
     async def get_todays_mini(self) -> Optional[Puzzle]:
@@ -173,7 +176,7 @@ class PuzzleService:
         Raises:
             NytAuthError: Re-raised if cookie is invalid.
         """
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = datetime.now(PACIFIC).strftime("%Y-%m-%d")
         return await self.get_puzzle(today, puzzle_type="mini")
 
     async def get_random_puzzle(self) -> Optional[Puzzle]:
@@ -205,7 +208,7 @@ class PuzzleService:
         Raises:
             NytAuthError: Re-raised if cookie is invalid.
         """
-        today = datetime.now()
+        today = datetime.now(PACIFIC).replace(tzinfo=None)
         min_mini_date = today - timedelta(days=730)
 
         for _ in range(10):
@@ -225,7 +228,7 @@ class PuzzleService:
         Returns:
             Historical puzzle for today's date from a random past year
         """
-        today = datetime.now()
+        today = datetime.now(PACIFIC)
         month = today.month
         day = today.day
 
