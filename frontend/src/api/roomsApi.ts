@@ -65,6 +65,10 @@ export const roomsApi = {
     await apiClient.put(`/api/rooms/${code}/state`, state);
   },
 
+  updateRoomPuzzle: async (code: string, puzzleId: string, puzzleData: Record<string, unknown>): Promise<void> => {
+    await apiClient.put(`/api/rooms/${code}/puzzle`, { puzzle_id: puzzleId, puzzle_data: puzzleData });
+  },
+
   updateColor: async (code: string, color: string): Promise<{ userId: string; displayName: string; color: string; joinedAt: string }> => {
     const response = await apiClient.put(`/api/rooms/${code}/color`, { color });
     return response.data;

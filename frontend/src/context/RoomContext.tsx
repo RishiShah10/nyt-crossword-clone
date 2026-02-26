@@ -17,6 +17,7 @@ interface RoomContextType {
   joinRoom: (code: string) => Promise<void>;
   leaveRoom: () => Promise<void>;
   changeColor: (color: string) => Promise<void>;
+  changeRoomPuzzle: (puzzleId: string, puzzleData: Record<string, unknown>) => Promise<void>;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -93,6 +94,24 @@ export function RoomProvider({ children }: { children: ReactNode }) {
             isComplete: event.isComplete,
           },
         });
+        break;
+      case 'puzzle_change':
+        dispatch({
+          type: 'SET_PUZZLE',
+          payload: {
+            puzzle: event.puzzleData as any,
+            puzzleId: event.puzzleId,
+          },
+        });
+        setRoom(prev => prev ? {
+          ...prev,
+          puzzleId: event.puzzleId,
+          puzzleData: event.puzzleData,
+          isComplete: false,
+          accumulatedSeconds: 0,
+          timerStartedAt: null,
+          isPaused: true,
+        } : prev);
         break;
     }
   }, [dispatch]);
@@ -261,6 +280,35 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     }
   }, [room, publish]);
 
+  const changeRoomPuzzle = useCallback(async (puzzleId: string, puzzleData: Record<string, unknown>) => {
+    if (!room) return;
+    // Persist to backend
+    await roomsApi.updateRoomPuzzle(room.code, puzzleId, puzzleData);
+    // Broadcast to other players
+    publish({
+      type: 'puzzle_change',
+      puzzleId,
+      puzzleData,
+      userId: user?.id ?? '',
+      timestamp: Date.now(),
+    });
+    // Apply locally
+    dispatch({
+      type: 'SET_PUZZLE',
+      payload: { puzzle: puzzleData as any, puzzleId },
+    });
+    // Reset local room state
+    setRoom(prev => prev ? {
+      ...prev,
+      puzzleId,
+      puzzleData,
+      isComplete: false,
+      accumulatedSeconds: 0,
+      timerStartedAt: null,
+      isPaused: true,
+    } : prev);
+  }, [room, publish, dispatch, user?.id]);
+
   const leaveRoom = useCallback(async () => {
     if (!room) return;
     try {
@@ -289,6 +337,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     joinRoom,
     leaveRoom,
     changeColor,
+    changeRoomPuzzle,
   };
 
   return (

@@ -32,6 +32,19 @@ class CreateRoomRequest(BaseModel):
         return v
 
 
+class UpdatePuzzleRequest(BaseModel):
+    puzzle_id: str = Field(..., min_length=1, max_length=50)
+    puzzle_data: dict
+
+    @field_validator("puzzle_data")
+    @classmethod
+    def validate_puzzle_data_size(cls, v):
+        import json
+        if len(json.dumps(v)) > 500_000:  # 500KB max
+            raise ValueError("puzzle_data too large")
+        return v
+
+
 class UpdateColorRequest(BaseModel):
     color: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
 
@@ -162,6 +175,28 @@ async def update_color(
     if result.get("taken"):
         raise HTTPException(status_code=409, detail="Color already taken by another member")
     return result
+
+
+@router.put("/{code}/puzzle")
+@limiter.limit("10/minute")
+async def update_room_puzzle(
+    request: Request,
+    code: str,
+    body: UpdatePuzzleRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Switch the room's puzzle and reset all progress. Requires membership."""
+    code = _validate_room_code(code)
+    service = RoomService(db)
+    is_member = await service.is_member(code, current_user["id"])
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not a member of this room")
+
+    success = await service.update_room_puzzle(code, body.puzzle_id, body.puzzle_data)
+    if not success:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return {"status": "updated"}
 
 
 @router.post("/{code}/token")

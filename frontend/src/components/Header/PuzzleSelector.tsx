@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { usePuzzle } from '../../context/PuzzleContext';
+import { useRoom } from '../../context/RoomContext';
 import { puzzleApi } from '../../api/client';
 import styles from './PuzzleSelector.module.css';
 
 const PuzzleSelector: React.FC = () => {
   const { state, dispatch } = usePuzzle();
+  const { isInRoom, changeRoomPuzzle } = useRoom();
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMiniMode, setIsMiniMode] = useState(false);
@@ -25,10 +27,21 @@ const PuzzleSelector: React.FC = () => {
   };
 
   const confirmSwitch = (): boolean => {
+    if (isInRoom) {
+      return confirm('Switch puzzles for everyone in the room? Current progress will be lost.');
+    }
     if (hasProgress()) {
       return confirm('Switch puzzles? Your current progress will be lost.');
     }
     return true;
+  };
+
+  const applyPuzzle = async (puzzle: any, puzzleId: string) => {
+    if (isInRoom) {
+      await changeRoomPuzzle(puzzleId, puzzle);
+    } else {
+      dispatch({ type: 'SET_PUZZLE', payload: { puzzle, puzzleId } });
+    }
   };
 
   const handleDateChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,13 +59,7 @@ const PuzzleSelector: React.FC = () => {
       const response = isMiniMode
         ? await puzzleApi.getMiniPuzzleByDate(newDate)
         : await puzzleApi.getPuzzleByDate(newDate);
-      dispatch({
-        type: 'SET_PUZZLE',
-        payload: {
-          puzzle: response.puzzle,
-          puzzleId: response.puzzle_id,
-        },
-      });
+      await applyPuzzle(response.puzzle, response.puzzle_id);
       setSelectedDate(newDate);
     } catch (error) {
       let message = 'Failed to load puzzle for this date. Please try another.';
@@ -81,13 +88,7 @@ const PuzzleSelector: React.FC = () => {
       const response = isMiniMode
         ? await puzzleApi.getRandomMiniPuzzle()
         : await puzzleApi.getRandomPuzzle();
-      dispatch({
-        type: 'SET_PUZZLE',
-        payload: {
-          puzzle: response.puzzle,
-          puzzleId: response.puzzle_id,
-        },
-      });
+      await applyPuzzle(response.puzzle, response.puzzle_id);
     } catch (error) {
       console.error('Error loading random puzzle:', error);
       dispatch({
@@ -109,13 +110,7 @@ const PuzzleSelector: React.FC = () => {
       const response = isMiniMode
         ? await puzzleApi.getTodaysMiniPuzzle()
         : await puzzleApi.getTodaysLivePuzzle();
-      dispatch({
-        type: 'SET_PUZZLE',
-        payload: {
-          puzzle: response.puzzle,
-          puzzleId: response.puzzle_id,
-        },
-      });
+      await applyPuzzle(response.puzzle, response.puzzle_id);
       setSelectedDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       let message = "Failed to load today's puzzle.";

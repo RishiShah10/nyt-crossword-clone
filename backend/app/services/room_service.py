@@ -205,6 +205,27 @@ class RoomService:
         await self.db.commit()
         return self._member_to_dict(member)
 
+    async def update_room_puzzle(self, code: str, puzzle_id: str, puzzle_data: dict) -> bool:
+        """Update room's puzzle and reset all progress."""
+        result = await self.db.execute(
+            select(Room).where(Room.code == code)
+        )
+        room = result.scalar_one_or_none()
+        if not room:
+            return False
+
+        room.puzzle_id = puzzle_id
+        room.puzzle_data = puzzle_data
+        room.user_grid = []
+        room.checked_cells = []
+        room.is_complete = False
+        room.accumulated_seconds = 0
+        room.timer_started_at = None
+        room.is_paused = True
+        room.updated_at = datetime.now(timezone.utc)
+        await self.db.commit()
+        return True
+
     async def get_room_state(self, code: str) -> Optional[dict]:
         """Get the current shared state for a room."""
         result = await self.db.execute(
