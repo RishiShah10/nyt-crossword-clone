@@ -33,7 +33,7 @@ interface PuzzleState {
 
 // Action types
 type PuzzleAction =
-  | { type: 'SET_PUZZLE'; payload: { puzzle: Puzzle; puzzleId: string } }
+  | { type: 'SET_PUZZLE'; payload: { puzzle: Puzzle; puzzleId: string; _skipLocalSave?: boolean } }
   | { type: 'SET_CELL_VALUE'; payload: { row: number; col: number; value: string; _fromRemote?: boolean; _forceCommit?: boolean } }
   | { type: 'SET_SELECTION'; payload: Selection | null }
   | { type: 'SET_HIGHLIGHTED_CELLS'; payload: Set<string> }
@@ -94,7 +94,7 @@ const initialState: PuzzleState = {
 function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
   switch (action.type) {
     case 'SET_PUZZLE': {
-      const { puzzle, puzzleId } = action.payload;
+      const { puzzle, puzzleId, _skipLocalSave } = action.payload;
       const grid = buildGrid(puzzle);
       const clueMap = buildClueMap(puzzle);
 
@@ -104,34 +104,37 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
       let elapsedSeconds = 0;
       let isComplete = false;
 
-      try {
-        // Try loading from new format
-        const saveData = SavesManager.loadPuzzleProgress(puzzleId);
+      // In room mode, skip local saves — room state comes from the server
+      if (!_skipLocalSave) {
+        try {
+          // Try loading from new format
+          const saveData = SavesManager.loadPuzzleProgress(puzzleId);
 
-        if (saveData) {
-          userGrid = new Map(saveData.userGrid);
-          checkedCells = new Map(saveData.checkedCells);
-          if (saveData.pencilCells) {
-            pencilCells = new Set(saveData.pencilCells);
-          }
-          elapsedSeconds = saveData.elapsedSeconds;
-          isComplete = saveData.isComplete;
-        } else {
-          // Try migrating from old format
-          const migrated = SavesManager.migrateOldSaveWithPuzzle(puzzleId, puzzle);
-          if (migrated) {
-            const migratedData = SavesManager.loadPuzzleProgress(puzzleId);
-            if (migratedData) {
-              userGrid = new Map(migratedData.userGrid);
-              checkedCells = new Map(migratedData.checkedCells);
-              elapsedSeconds = migratedData.elapsedSeconds;
-              isComplete = migratedData.isComplete;
+          if (saveData) {
+            userGrid = new Map(saveData.userGrid);
+            checkedCells = new Map(saveData.checkedCells);
+            if (saveData.pencilCells) {
+              pencilCells = new Set(saveData.pencilCells);
+            }
+            elapsedSeconds = saveData.elapsedSeconds;
+            isComplete = saveData.isComplete;
+          } else {
+            // Try migrating from old format
+            const migrated = SavesManager.migrateOldSaveWithPuzzle(puzzleId, puzzle);
+            if (migrated) {
+              const migratedData = SavesManager.loadPuzzleProgress(puzzleId);
+              if (migratedData) {
+                userGrid = new Map(migratedData.userGrid);
+                checkedCells = new Map(migratedData.checkedCells);
+                elapsedSeconds = migratedData.elapsedSeconds;
+                isComplete = migratedData.isComplete;
+              }
             }
           }
+        } catch (error) {
+          console.error('Error loading puzzle progress:', error);
+          // Start fresh on error
         }
-      } catch (error) {
-        console.error('Error loading puzzle progress:', error);
-        // Start fresh on error
       }
 
       // Auto-select first cell (0,0) with across direction

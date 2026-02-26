@@ -101,6 +101,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
           payload: {
             puzzle: event.puzzleData as any,
             puzzleId: event.puzzleId,
+            _skipLocalSave: true,
           },
         });
         setRoom(prev => prev ? {
@@ -236,6 +237,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       payload: {
         puzzle: puzzleData as any,
         puzzleId: result.room.puzzleId,
+        _skipLocalSave: true,
       },
     });
 
@@ -295,7 +297,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     // Apply locally
     dispatch({
       type: 'SET_PUZZLE',
-      payload: { puzzle: puzzleData as any, puzzleId },
+      payload: { puzzle: puzzleData as any, puzzleId, _skipLocalSave: true },
     });
     // Reset local room state
     setRoom(prev => prev ? {
