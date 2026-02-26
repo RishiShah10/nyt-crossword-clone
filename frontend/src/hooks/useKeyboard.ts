@@ -159,18 +159,26 @@ export function useKeyboard() {
         return;
       }
 
-      // Enter - toggle direction (same as Space)
+      // Enter - move to next clue (same as Tab)
       if (e.key === 'Enter') {
         e.preventDefault();
-        dispatch({ type: 'TOGGLE_DIRECTION' });
-
-        // Update highlighted cells with new direction
-        const newDirection = direction === 'across' ? 'down' : 'across';
-        const clueKey = getClueKeyForCell(grid, row, col, newDirection, clueMap);
-        if (clueKey) {
-          const cells = getCellsForClue(clueKey, clueMap);
-          const highlighted = new Set(cells.map(c => `${c.row},${c.col}`));
-          dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
+        const result = getNextWord(grid, row, col, direction, clueMap);
+        if (result) {
+          dispatch({
+            type: 'SET_SELECTION',
+            payload: {
+              row: result.row,
+              col: result.col,
+              direction: result.direction,
+              clueNumber: grid[result.row][result.col].number,
+            },
+          });
+          const clueKey = getClueKeyForCell(grid, result.row, result.col, result.direction, clueMap);
+          if (clueKey) {
+            const cells = getCellsForClue(clueKey, clueMap);
+            const highlighted = new Set(cells.map(c => `${c.row},${c.col}`));
+            dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
+          }
         }
         return;
       }
