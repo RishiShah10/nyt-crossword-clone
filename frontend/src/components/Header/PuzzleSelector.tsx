@@ -10,7 +10,7 @@ const PuzzleSelector: React.FC = () => {
   const { isInRoom, changeRoomPuzzle } = useRoom();
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isMiniMode, setIsMiniMode] = useState(false);
+  const [isMiniMode, setIsMiniMode] = useState(() => localStorage.getItem('puzzleMiniMode') === 'true');
 
   const MIN_DATE = '2010-01-01';
   const MAX_DATE = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
@@ -137,13 +137,13 @@ const PuzzleSelector: React.FC = () => {
         <div className={`${styles.toggleWrapper} ${isLoading ? styles.toggleDisabled : ''}`}>
           <span
             className={`${styles.toggleLabel} ${!isMiniMode ? styles.active : ''}`}
-            onClick={() => !isLoading && setIsMiniMode(false)}
+            onClick={() => { if (!isLoading) { setIsMiniMode(false); localStorage.setItem('puzzleMiniMode', 'false'); } }}
           >
             Daily
           </span>
           <span
             className={`${styles.toggleLabel} ${isMiniMode ? styles.active : ''}`}
-            onClick={() => !isLoading && setIsMiniMode(true)}
+            onClick={() => { if (!isLoading) { setIsMiniMode(true); localStorage.setItem('puzzleMiniMode', 'true'); } }}
           >
             Mini
           </span>
