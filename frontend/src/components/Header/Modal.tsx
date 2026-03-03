@@ -3,12 +3,13 @@ import React, { useEffect } from 'react';
 interface ModalProps {
   isOpen: boolean;
   title: string;
-  message: string;
+  message?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm?: () => void;
   onClose: () => void;
   variant?: 'info' | 'warning';
+  children?: React.ReactNode;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -20,6 +21,7 @@ const Modal: React.FC<ModalProps> = ({
   onConfirm,
   onClose,
   variant = 'info',
+  children,
 }) => {
   useEffect(() => {
     if (!isOpen) return;
@@ -44,7 +46,7 @@ const Modal: React.FC<ModalProps> = ({
         }}>
           {title}
         </div>
-        <div style={styles.body}>{message}</div>
+        <div style={styles.body}>{children || message}</div>
         <div style={styles.footer}>
           {isConfirm ? (
             <>
