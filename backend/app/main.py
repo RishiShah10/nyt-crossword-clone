@@ -9,6 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from .api import puzzles_router, auth_router, saves_router, rooms_router
 from .config import settings
+from .limiter import limiter
 from .services import CacheService, PuzzleService
 from .db.init_db import init_db
 from .middleware import SecurityHeadersMiddleware, ErrorMaskingMiddleware
@@ -17,10 +18,6 @@ logger = logging.getLogger(__name__)
 
 IS_PRODUCTION = bool(os.environ.get("VERCEL"))
 IS_SERVERLESS = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
-__all_limiters__ = [limiter] # To ensure it's not removed by linter if not used in file
 
 
 @asynccontextmanager

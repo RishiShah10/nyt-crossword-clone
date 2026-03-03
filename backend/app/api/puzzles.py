@@ -11,16 +11,10 @@ from ..services.nyt_service import NytService, NytAuthError
 from ..services.openai_service import OpenAIService
 from ..config import settings
 from ..dependencies import get_current_user
+from ..limiter import limiter
 
 
 router = APIRouter(prefix="/api/puzzles", tags=["puzzles"])
-
-# Import limiter from app.main to avoid duplicate instances
-def get_limiter():
-    from ..main import limiter
-    return limiter
-
-limiter = get_limiter()
 
 # Global service instances
 cache_service = CacheService(cache_dir=settings.CACHE_DIR)

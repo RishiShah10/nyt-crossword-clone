@@ -12,17 +12,11 @@ from ..db.models import User
 from ..dependencies import get_db, get_current_user
 from ..services.auth_service import AuthService
 from ..config import settings
+from ..limiter import limiter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
-
-# Import limiter from app.main to avoid duplicate instances
-def get_limiter():
-    from ..main import limiter
-    return limiter
-
-limiter = get_limiter()
 
 # Cookie settings
 IS_PRODUCTION = bool(os.environ.get("VERCEL"))

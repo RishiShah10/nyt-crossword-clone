@@ -8,17 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..dependencies import get_db, get_current_user
 from ..services.room_service import RoomService
 from ..services.ably_service import ably_service
+from ..limiter import limiter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/rooms", tags=["rooms"])
-
-# Import limiter from app.main to avoid duplicate instances
-def get_limiter():
-    from ..main import limiter
-    return limiter
-
-limiter = get_limiter()
 
 ROOM_CODE_PATTERN = re.compile(r"^[A-Z0-9]{4,8}$")
 
