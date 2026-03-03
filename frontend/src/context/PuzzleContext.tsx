@@ -120,8 +120,8 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
 
             if (saveData) {
               console.log('Found saved progress');
-              userGrid = new Map(saveData.userGrid);
-              checkedCells = new Map(saveData.checkedCells);
+              userGrid = (saveData.userGrid && Array.isArray(saveData.userGrid)) ? new Map(saveData.userGrid) : new Map();
+              checkedCells = (saveData.checkedCells && Array.isArray(saveData.checkedCells)) ? new Map(saveData.checkedCells) : new Map();
               if (saveData.pencilCells) {
                 pencilCells = new Set(saveData.pencilCells);
               }
@@ -133,8 +133,8 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
               if (migrated) {
                 const migratedData = SavesManager.loadPuzzleProgress(puzzleId);
                 if (migratedData) {
-                  userGrid = new Map(migratedData.userGrid);
-                  checkedCells = new Map(migratedData.checkedCells);
+                  userGrid = (migratedData.userGrid && Array.isArray(migratedData.userGrid)) ? new Map(migratedData.userGrid) : new Map();
+                  checkedCells = (migratedData.checkedCells && Array.isArray(migratedData.checkedCells)) ? new Map(migratedData.checkedCells) : new Map();
                   elapsedSeconds = migratedData.elapsedSeconds;
                   isComplete = migratedData.isComplete;
                 }
@@ -419,8 +419,8 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
       const { userGrid, checkedCells, accumulatedSeconds, isComplete } = action.payload;
       return {
         ...state,
-        userGrid: new Map(userGrid),
-        checkedCells: new Map(checkedCells),
+        userGrid: (userGrid && Array.isArray(userGrid)) ? new Map(userGrid) : new Map(),
+        checkedCells: (checkedCells && Array.isArray(checkedCells)) ? new Map(checkedCells) : new Map(),
         elapsedSeconds: accumulatedSeconds,
         isComplete,
       };

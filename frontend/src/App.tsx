@@ -44,8 +44,8 @@ function App() {
             const saveData = SavesManager.loadPuzzleProgress(meta.puzzleId);
             return {
               puzzle_id: meta.puzzleId,
-              user_grid: saveData?.userGrid ? Array.from(new Map(saveData.userGrid).entries()) : [],
-              checked_cells: saveData?.checkedCells ? Array.from(new Map(saveData.checkedCells).entries()) : [],
+              user_grid: (saveData?.userGrid && Array.isArray(saveData.userGrid)) ? saveData.userGrid : [],
+              checked_cells: (saveData?.checkedCells && Array.isArray(saveData.checkedCells)) ? saveData.checkedCells : [],
               elapsed_seconds: meta.elapsedSeconds,
               is_complete: meta.isComplete,
               cells_filled: meta.cellsFilled,
