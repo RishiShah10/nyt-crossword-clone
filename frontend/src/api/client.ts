@@ -62,6 +62,14 @@ export const puzzleApi = {
     return response.data;
   },
 
+  async generatePuzzle(topics: string, title: string): Promise<PuzzleResponse> {
+    const response = await apiClient.post<PuzzleResponse>('/api/puzzles/generate', {
+      topics,
+      title,
+    });
+    return response.data;
+  },
+
   async checkAnswers(date: string, userAnswers: { across: Record<string, string>; down: Record<string, string> }) {
     const response = await apiClient.post(`/api/puzzles/${date}/check`, userAnswers);
     return response.data;

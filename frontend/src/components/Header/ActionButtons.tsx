@@ -4,6 +4,7 @@ import { validatePuzzle, revealAllAnswers, getCorrectLetter } from '../../utils/
 import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
 import SavesManager from '../../utils/savesManager';
 import Modal from './Modal';
+import GeneratePuzzleModal from './GeneratePuzzleModal';
 
 interface ActionButtonsProps {
   onOpenLibrary?: () => void;
@@ -30,6 +31,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary }) => {
   const [showSaved, setShowSaved] = useState(false);
   const [showRevealMenu, setShowRevealMenu] = useState(false);
   const [showCheckMenu, setShowCheckMenu] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [modal, setModal] = useState<ModalState>(MODAL_CLOSED);
   const revealMenuRef = useRef<HTMLDivElement>(null);
   const checkMenuRef = useRef<HTMLDivElement>(null);
@@ -431,7 +433,21 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary }) => {
         >
           ↻ Reset
         </button>
+
+        <button
+          className="btn btn-ai"
+          onClick={() => setShowGenerateModal(true)}
+          title="Generate a custom mini crossword with AI"
+          aria-label="Generate AI puzzle"
+        >
+          ✨ AI Mini
+        </button>
       </div>
+
+      <GeneratePuzzleModal 
+        isOpen={showGenerateModal} 
+        onClose={() => setShowGenerateModal(false)} 
+      />
 
       <Modal
         isOpen={modal.isOpen}

@@ -1,13 +1,20 @@
-from fastapi import APIRouter, HTTPException, Depends
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, Depends, Request, status
 from typing import Optional
+from pydantic import BaseModel, Field
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from ..models.puzzle import Puzzle, PuzzleResponse
 from ..services.puzzle_service import PuzzleService
 from ..services.cache_service import CacheService
 from ..services.nyt_service import NytService, NytAuthError
+from ..services.openai_service import OpenAIService
 from ..config import settings
+from ..dependencies import get_current_user
 
 
 router = APIRouter(prefix="/api/puzzles", tags=["puzzles"])
+limiter = Limiter(key_func=get_remote_address)
 
 # Global service instances
 cache_service = CacheService(cache_dir=settings.CACHE_DIR)
@@ -172,6 +179,40 @@ async def get_puzzle_by_date(date: str):
         )
 
     return PuzzleResponse(puzzle=puzzle, puzzle_id=date)
+
+
+class GenerateRequest(BaseModel):
+    topics: str = Field(..., min_length=1, max_length=200)
+    title: str = Field(..., min_length=1, max_length=100)
+
+
+@router.post("/generate", response_model=PuzzleResponse)
+@limiter.limit("3/minute")
+async def generate_puzzle(
+    request: Request,
+    body: GenerateRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Generate a custom crossword puzzle using AI."""
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="OpenAI generation is not configured on the server."
+        )
+
+    openai_service = OpenAIService(settings.OPENAI_API_KEY)
+    puzzle = await openai_service.generate_mini_crossword(body.topics, body.title)
+
+    if not puzzle:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate crossword puzzle. Please try different topics."
+        )
+
+    # Create a unique ID for the generated puzzle
+    puzzle_id = f"gen-{int(datetime.now().timestamp())}"
+
+    return PuzzleResponse(puzzle=puzzle, puzzle_id=puzzle_id)
 
 
 @router.post("/{date}/check")
