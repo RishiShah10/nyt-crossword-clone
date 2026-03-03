@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Request, status
+from fastapi import APIRouter, HTTPException, Request, status
 from typing import Optional
 from pydantic import BaseModel, Field
 from slowapi import Limiter
@@ -10,7 +10,6 @@ from ..services.cache_service import CacheService
 from ..services.nyt_service import NytService, NytAuthError
 from ..services.openai_service import OpenAIService
 from ..config import settings
-from ..dependencies import get_current_user
 from ..limiter import limiter
 
 
@@ -187,13 +186,12 @@ class GenerateRequest(BaseModel):
 
 
 @router.post("/generate", response_model=PuzzleResponse)
-@limiter.limit("3/minute")
+@limiter.limit("5/minute")
 async def generate_puzzle(
     request: Request,
     body: GenerateRequest,
-    current_user: dict = Depends(get_current_user),
 ):
-    """Generate a custom crossword puzzle using AI."""
+    """Generate a custom mini crossword using the hybrid CSP + LLM engine."""
     if not settings.OPENAI_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
