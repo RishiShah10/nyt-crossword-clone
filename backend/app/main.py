@@ -78,7 +78,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Security middleware (order matters — outermost runs first)
 # 1. Error masking — catches unhandled exceptions, returns generic 500
-app.add_middleware(ErrorMaskingMiddleware)
+# app.add_middleware(ErrorMaskingMiddleware)
 
 # 2. Security headers — X-Content-Type-Options, X-Frame-Options, HSTS, etc.
 app.add_middleware(SecurityHeadersMiddleware)
