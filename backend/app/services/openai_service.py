@@ -17,45 +17,98 @@ class OpenAIService:
             self.client = None
 
     async def generate_mini_crossword(self, topics: str, title: str) -> Optional[Puzzle]:
-        """Generate a 5x5 mini crossword puzzle about topics using OpenAI."""
+        """Generate and verify a 5x5 mini crossword puzzle using a two-step LLM process."""
         if not self.client:
             logger.error("OpenAI API key not set")
             return None
 
         today = datetime.date.today().strftime("%Y-%m-%d")
         
-        system_prompt = """You are an expert crossword constructor for the New York Times.
-        Your goal is to build a high-quality 5x5 mini crossword.
-        
-        RULES:
-        1. GRID: Must be exactly 5x5. Use letters A-Z and "." for black squares.
-        2. SYMMETRY: The grid must have 180-degree rotational symmetry. If (r, c) is a black square, then (4-r, 4-c) must also be a black square.
-        3. CONNECTIVITY: All white cells must be part of a single contiguous block (no "islands").
-        4. VALIDITY: Every white cell must be part of exactly one Across word AND exactly one Down word. No words shorter than 3 letters (except in rare cases for 5x5 minis, but prefer 3-5).
-        5. NUMBERING: Numbers are assigned sequentially from left-to-right, top-to-bottom. A cell gets a number if it is the start of an Across or Down word.
-        
-        OUTPUT FORMAT:
-        Return a JSON object matching the NYT crossword format:
-        {
-            "size": {"rows": 5, "cols": 5},
-            "grid": ["A","B","C",...], (flat array of 25 strings)
-            "gridnums": [1,2,3,0,...], (flat array of 25 integers, 0 for cells without numbers)
-            "clues": {"across": ["1. Clue", ...], "down": ["1. Clue", ...]},
-            "answers": {"across": ["ABC", ...], "down": ["XYZ", ...]},
-            "title": "Title",
-            "author": "AI Constructor",
-            "date": "YYYY-MM-DD"
-        }
-        """
+        system_prompt = """
+You are a professional crossword constructor trained in American-style crosswords.
 
-        user_prompt = f"""Construct a 5x5 mini crossword titled '{title}' about: {topics}.
-        Ensure the clues are clever and related to the topics.
-        Ensure 'grid' and 'gridnums' are exactly 25 elements long.
-        Ensure the black squares ('.') in the grid perfectly match the word structure in the clues.
-        """
+Your task is to CONSTRUCT and VALIDATE a 5x5 themed mini crossword.
+
+You must follow a strict construction workflow:
+
+STEP 1 — Design the Grid Pattern
+- Create a 5x5 grid using letters A-Z and "." for black squares.
+- Grid must have 180-degree rotational symmetry.
+- All white squares must be connected.
+- No word (Across or Down) may be shorter than 3 letters.
+- Every white square must belong to exactly one Across and one Down word.
+
+STEP 2 — Extract Word Slots
+- Identify all Across and Down slots.
+- Ensure slot lengths are between 3 and 5 letters.
+- Ensure the grid structure matches the slot structure exactly.
+
+STEP 3 — Fill With Themed Entries
+- At least 60% of answers must strongly relate to the provided topics.
+- The longest Across answer MUST be clearly theme-relevant.
+- Avoid random fill. Avoid generic crossword glue unless absolutely necessary.
+- All answers must be real English words or widely recognized proper nouns.
+
+STEP 4 — Generate High-Quality Clues
+- Clues must be clever, natural, and accurate.
+- Clues must correspond EXACTLY to their answers.
+- No vague or placeholder clues.
+- The tone should resemble a New York Times Mini.
+
+STEP 5 — Self-Validation (MANDATORY)
+Before outputting JSON, internally verify:
+- Grid is exactly 25 cells.
+- Rotational symmetry is correct.
+- White cells form one connected component.
+- Every Across answer matches letters in grid.
+- Every Down answer matches letters in grid.
+- Clue count matches answer count.
+- gridnums numbering matches Across/Down starts.
+
+If any constraint fails, reconstruct before outputting.
+
+OUTPUT:
+Return ONLY a valid JSON object in this exact format:
+
+{
+    "size": {"rows": 5, "cols": 5},
+    "grid": ["A","B","C",...], 
+    "gridnums": [1,2,3,0,...],
+    "clues": {"across": ["1. Clue", ...], "down": ["1. Clue", ...]},
+    "answers": {"across": ["ABC", ...], "down": ["XYZ", ...]},
+    "title": "Title",
+    "author": "AI Constructor",
+    "date": "YYYY-MM-DD"
+}
+
+Do not include explanations.
+Do not include commentary.
+Only output valid JSON.
+"""
+
+        user_prompt = f"""
+Construct a 5x5 themed mini crossword.
+
+Title: "{title}"
+Theme topics: {topics}
+
+The puzzle must strongly reflect these topics.
+
+Additional constraints:
+- Longest Across entry must directly reference the theme.
+- Avoid weak fill or crossword glue (e.g., "OREO", "ETTA", "ERA") unless absolutely necessary.
+- Theme consistency is more important than clever grid density.
+- Prefer fewer black squares if possible while maintaining validity.
+- Ensure the grid and answers match perfectly.
+
+Remember:
+You must complete internal validation before returning the final JSON.
+"""
 
         try:
-            response = await self.client.chat.completions.create(
+            # Step 1: Generate
+            logger.info(f"Generating puzzle with topics: {topics}")
+            gen_response = await self.client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -65,10 +118,37 @@ class OpenAIService:
                 temperature=0.7
             )
             
-            data = json.loads(response.choices[0].message.content)
+            raw_data = json.loads(gen_response.choices[0].message.content)
             
-            # Recalculate gridnums to ensure they ALWAYS match the grid structure
-            # This fixes the "black boxes must match" requirement
+            # Step 2: Verify & Refine
+            logger.info("Verifying and refining puzzle...")
+            verify_system_prompt = """
+You are a senior crossword editor. Your job is to review the provided 5x5 mini crossword for technical perfection and clue quality.
+Verify:
+1. Every Across and Down word in the 'answers' correctly matches the 'grid' letters at those positions.
+2. The clues are factually accurate, clever, and correctly numbered.
+3. The grid has 180-degree rotational symmetry.
+4. The theme is strong and relates to the user's topics.
+
+If you find errors (mismatched letters, broken symmetry, weak clues), fix them and return the corrected JSON.
+If the puzzle is already perfect, return it exactly as is.
+Return ONLY valid JSON.
+"""
+            verify_user_prompt = f"Review and refine this puzzle for the topics '{topics}':\n\n{json.dumps(raw_data)}"
+            
+            verify_response = await self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": verify_system_prompt},
+                    {"role": "user", "content": verify_user_prompt}
+                ],
+                response_format={ "type": "json_object" },
+                temperature=0.3
+            )
+            
+            data = json.loads(verify_response.choices[0].message.content)
+            
+            # Final Safety: Recalculate gridnums to ensure they ALWAYS match the grid structure
             grid = data.get("grid", [])
             if len(grid) == 25:
                 calculated_nums = [0] * 25
@@ -87,9 +167,13 @@ class OpenAIService:
                             current_num += 1
                 
                 data["gridnums"] = calculated_nums
-                logger.info("Recalculated gridnums to ensure consistency")
+                logger.info("Recalculated gridnums to ensure final consistency")
 
             return Puzzle.model_validate(data)
+            
+        except Exception as e:
+            logger.error(f"Error generating crossword: {e}")
+            return None
             
         except Exception as e:
             logger.error(f"Error generating crossword: {e}")
