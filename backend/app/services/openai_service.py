@@ -24,35 +24,34 @@ class OpenAIService:
 
         today = datetime.date.today().strftime("%Y-%m-%d")
         
-        system_prompt = """You are a professional crossword puzzle constructor. 
-        Your task is to generate a 5x5 mini crossword puzzle.
-        Standard rules apply:
-        1. Cells contain a single uppercase letter (A-Z) or a black square (".").
-        2. Black squares should be used sparingly (0-4 in a 5x5 grid).
-        3. Every white cell must be part of BOTH an 'Across' and a 'Down' word.
-        4. No single-letter words allowed.
-        5. Words must be common English words, or proper nouns related to the user's topics.
-        6. Grid must be rotationally symmetric (180 degrees).
-        7. Numbers (gridnums) are assigned from left-to-right, top-to-bottom. A cell gets a number if it starts an 'Across' or 'Down' word (or both).
-        8. Return the puzzle in the exact NYT JSON format with "size", "grid", "gridnums", "clues", "answers", "title", "author", "date".
-        9. Every clue string must start with its number and a dot, e.g., "1. Feline".
-        10. Answer strings should be just the word in uppercase.
+        system_prompt = """You are an expert crossword constructor for the New York Times.
+        Your goal is to build a high-quality 5x5 mini crossword.
+        
+        RULES:
+        1. GRID: Must be exactly 5x5. Use letters A-Z and "." for black squares.
+        2. SYMMETRY: The grid must have 180-degree rotational symmetry. If (r, c) is a black square, then (4-r, 4-c) must also be a black square.
+        3. CONNECTIVITY: All white cells must be part of a single contiguous block (no "islands").
+        4. VALIDITY: Every white cell must be part of exactly one Across word AND exactly one Down word. No words shorter than 3 letters (except in rare cases for 5x5 minis, but prefer 3-5).
+        5. NUMBERING: Numbers are assigned sequentially from left-to-right, top-to-bottom. A cell gets a number if it is the start of an Across or Down word.
+        
+        OUTPUT FORMAT:
+        Return a JSON object matching the NYT crossword format:
+        {
+            "size": {"rows": 5, "cols": 5},
+            "grid": ["A","B","C",...], (flat array of 25 strings)
+            "gridnums": [1,2,3,0,...], (flat array of 25 integers, 0 for cells without numbers)
+            "clues": {"across": ["1. Clue", ...], "down": ["1. Clue", ...]},
+            "answers": {"across": ["ABC", ...], "down": ["XYZ", ...]},
+            "title": "Title",
+            "author": "AI Constructor",
+            "date": "YYYY-MM-DD"
+        }
         """
 
-        user_prompt = f"""Generate a 5x5 mini crossword puzzle with the title '{title}' about these topics: {topics}.
-        Return ONLY valid JSON.
-        
-        Format Example:
-        {{
-            "size": {{"rows": 5, "cols": 5}},
-            "grid": ["S","P","E","E","D","M","O","O","N","S",...], (length 25)
-            "gridnums": [1,2,3,4,5,6,0,0,0,0,...], (length 25)
-            "clues": {{"across": ["1. Rapid", "6. Satellite", ...], "down": ["1. ...", ...]}},
-            "answers": {{"across": ["SPEED", "MOONS", ...], "down": ["...", ...]}},
-            "title": "{title}",
-            "author": "AI Generator",
-            "date": "{today}"
-        }}
+        user_prompt = f"""Construct a 5x5 mini crossword titled '{title}' about: {topics}.
+        Ensure the clues are clever and related to the topics.
+        Ensure 'grid' and 'gridnums' are exactly 25 elements long.
+        Ensure the black squares ('.') in the grid perfectly match the word structure in the clues.
         """
 
         try:
@@ -66,19 +65,29 @@ class OpenAIService:
                 temperature=0.7
             )
             
-            data_str = response.choices[0].message.content
-            logger.info("OpenAI response received")
+            data = json.loads(response.choices[0].message.content)
             
-            # Basic validation of the JSON structure before Pydantic
-            data = json.loads(data_str)
-            
-            # Ensure grid and gridnums have length 25
-            if len(data.get("grid", [])) != 25:
-                logger.error(f"Invalid grid length: {len(data.get('grid', []))}")
-                return None
-            if len(data.get("gridnums", [])) != 25:
-                logger.error(f"Invalid gridnums length: {len(data.get('gridnums', []))}")
-                return None
+            # Recalculate gridnums to ensure they ALWAYS match the grid structure
+            # This fixes the "black boxes must match" requirement
+            grid = data.get("grid", [])
+            if len(grid) == 25:
+                calculated_nums = [0] * 25
+                current_num = 1
+                for r in range(5):
+                    for c in range(5):
+                        idx = r * 5 + c
+                        if grid[idx] == ".":
+                            continue
+                            
+                        starts_across = (c == 0 or grid[idx-1] == ".") and (c < 4 and grid[idx+1] != ".")
+                        starts_down = (r == 0 or grid[idx-5] == ".") and (r < 4 and grid[idx+5] != ".")
+                        
+                        if starts_across or starts_down:
+                            calculated_nums[idx] = current_num
+                            current_num += 1
+                
+                data["gridnums"] = calculated_nums
+                logger.info("Recalculated gridnums to ensure consistency")
 
             return Puzzle.model_validate(data)
             
