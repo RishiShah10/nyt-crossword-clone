@@ -16,6 +16,7 @@ from .middleware import SecurityHeadersMiddleware, ErrorMaskingMiddleware
 logger = logging.getLogger(__name__)
 
 IS_PRODUCTION = bool(os.environ.get("VERCEL"))
+IS_SERVERLESS = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -28,8 +29,10 @@ async def lifespan(app: FastAPI):
     logger.info("Starting NYT Crossword Clone Backend...")
 
     # Initialize database
-    if settings.DATABASE_URL:
+    if settings.DATABASE_URL and not IS_SERVERLESS:
         await init_db()
+    elif settings.DATABASE_URL:
+        logger.info("Skipping init_db in serverless environment (expect tables to be pre-created)")
 
     # Optional: create NytService for lifespan-managed cleanup
     from .services.nyt_service import NytService
@@ -39,8 +42,7 @@ async def lifespan(app: FastAPI):
         logger.info("NYT live puzzle service enabled (2019-present)")
 
     # Pre-fetch puzzles only when running as a long-lived server (not serverless)
-    is_serverless = os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
-    if not is_serverless:
+    if not IS_SERVERLESS:
         cache_service = CacheService(cache_dir=settings.CACHE_DIR)
         puzzle_service = PuzzleService(
             cache_service=cache_service,

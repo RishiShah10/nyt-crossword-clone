@@ -2,10 +2,10 @@ import axios from 'axios';
 import type { PuzzleResponse } from '../types/puzzle';
 
 // API base URL - empty string = same origin (Vercel), fallback to localhost for dev
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL || undefined,
   timeout: 90000,
   headers: {
     'Content-Type': 'application/json',
