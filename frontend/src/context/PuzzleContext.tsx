@@ -95,10 +95,16 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
   switch (action.type) {
     case 'SET_PUZZLE': {
       const { puzzle, puzzleId, _skipLocalSave } = action.payload;
+      console.log('Reducer SET_PUZZLE starting for:', puzzleId);
       
       try {
+        console.log('Building grid...');
         const grid = buildGrid(puzzle);
+        console.log('Grid built successfully, rows:', grid.length);
+        
+        console.log('Building clue map...');
         const clueMap = buildClueMap(puzzle);
+        console.log('Clue map built successfully, clues:', clueMap.size);
 
         let userGrid = new Map<string, string>();
         let checkedCells = new Map<string, boolean>();
@@ -109,10 +115,11 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         // In room mode, skip local saves — room state comes from the server
         if (!_skipLocalSave) {
           try {
-            // Try loading from new format
+            console.log('Loading local progress for:', puzzleId);
             const saveData = SavesManager.loadPuzzleProgress(puzzleId);
 
             if (saveData) {
+              console.log('Found saved progress');
               userGrid = new Map(saveData.userGrid);
               checkedCells = new Map(saveData.checkedCells);
               if (saveData.pencilCells) {
@@ -121,7 +128,7 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
               elapsedSeconds = saveData.elapsedSeconds;
               isComplete = saveData.isComplete;
             } else {
-              // Try migrating from old format
+              console.log('No saved progress found, checking migration');
               const migrated = SavesManager.migrateOldSaveWithPuzzle(puzzleId, puzzle);
               if (migrated) {
                 const migratedData = SavesManager.loadPuzzleProgress(puzzleId);
@@ -135,11 +142,11 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
             }
           } catch (error) {
             console.error('Error loading puzzle progress:', error);
-            // Start fresh on error
           }
         }
 
         // Auto-select first cell (0,0) with across direction
+        console.log('Setting initial selection...');
         const firstClue = Array.from(clueMap.values()).find(c => c.direction === 'across');
         const initialSelection: Selection | null = firstClue && firstClue.cells.length > 0
           ? {
@@ -155,6 +162,7 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
           ? new Set(firstClue.cells.map(c => `${c.row},${c.col}`))
           : new Set<string>();
 
+        console.log('Reducer SET_PUZZLE complete, returning new state');
         return {
           ...state,
           puzzle,
@@ -173,7 +181,7 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
           error: null,
         };
       } catch (err: any) {
-        console.error('Error building puzzle grid:', err);
+        console.error('CRITICAL ERROR in SET_PUZZLE reducer:', err);
         return {
           ...state,
           isLoading: false,

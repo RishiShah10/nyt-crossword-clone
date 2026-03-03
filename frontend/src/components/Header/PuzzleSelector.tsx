@@ -23,7 +23,7 @@ const PuzzleSelector: React.FC = () => {
   }, [state.puzzle?.date]);
 
   const hasProgress = (): boolean => {
-    return state.userGrid && state.userGrid.size > 0;
+    return !!state.userGrid && state.userGrid.size > 0;
   };
 
   const confirmSwitch = (): boolean => {
