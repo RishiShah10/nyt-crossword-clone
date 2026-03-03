@@ -4,7 +4,17 @@ import type { Puzzle, Cell, ClueInfo } from '../types/puzzle';
  * Convert flat puzzle grid to 2D grid with cell metadata
  */
 export function buildGrid(puzzle: Puzzle): Cell[][] {
+  if (!puzzle || !puzzle.size || !puzzle.grid || !puzzle.gridnums) {
+    throw new Error('Invalid puzzle data: missing required fields');
+  }
+
   const { rows, cols } = puzzle.size;
+  const expectedLength = rows * cols;
+
+  if (puzzle.grid.length < expectedLength || puzzle.gridnums.length < expectedLength) {
+    throw new Error(`Invalid puzzle data: grid/gridnums length mismatch. Expected ${expectedLength}, got ${puzzle.grid.length}/${puzzle.gridnums.length}`);
+  }
+
   const grid2D: Cell[][] = [];
 
   for (let row = 0; row < rows; row++) {
@@ -36,9 +46,12 @@ export function buildGrid(puzzle: Puzzle): Cell[][] {
  * Build mapping of clue numbers to cell ranges and answers
  */
 export function buildClueMap(puzzle: Puzzle): Map<string, ClueInfo> {
+  console.log('buildClueMap: starting for puzzle size', puzzle.size);
   const { rows, cols } = puzzle.size;
   const grid2D = buildGrid(puzzle);
   const clueMap = new Map<string, ClueInfo>();
+
+  console.log('buildClueMap: grid built, scanning for clues...');
 
   // Track which clue index we're on for across and down
   let acrossIndex = 0;
@@ -111,6 +124,7 @@ export function getClueKeyForCell(
   direction: 'across' | 'down',
   clueMap: Map<string, ClueInfo>
 ): string | null {
+  if (!grid || grid.length === 0) return null;
   const rows = grid.length;
   const cols = grid[0]?.length || 0;
 

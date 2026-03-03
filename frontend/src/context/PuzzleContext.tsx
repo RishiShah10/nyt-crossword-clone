@@ -103,6 +103,7 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         console.log('Grid built successfully, rows:', grid.length);
         
         console.log('Building clue map...');
+        if (!grid) throw new Error('Grid building failed');
         const clueMap = buildClueMap(puzzle);
         console.log('Clue map built successfully, clues:', clueMap.size);
 
@@ -119,14 +120,14 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
             const saveData = SavesManager.loadPuzzleProgress(puzzleId);
 
             if (saveData) {
-              console.log('Found saved progress');
+              console.log('Found saved progress, validating formats...');
               userGrid = (saveData.userGrid && Array.isArray(saveData.userGrid)) ? new Map(saveData.userGrid) : new Map();
               checkedCells = (saveData.checkedCells && Array.isArray(saveData.checkedCells)) ? new Map(saveData.checkedCells) : new Map();
               if (saveData.pencilCells) {
                 pencilCells = new Set(saveData.pencilCells);
               }
-              elapsedSeconds = saveData.elapsedSeconds;
-              isComplete = saveData.isComplete;
+              elapsedSeconds = saveData.elapsedSeconds || 0;
+              isComplete = !!saveData.isComplete;
             } else {
               console.log('No saved progress found, checking migration');
               const migrated = SavesManager.migrateOldSaveWithPuzzle(puzzleId, puzzle);
@@ -135,8 +136,8 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
                 if (migratedData) {
                   userGrid = (migratedData.userGrid && Array.isArray(migratedData.userGrid)) ? new Map(migratedData.userGrid) : new Map();
                   checkedCells = (migratedData.checkedCells && Array.isArray(migratedData.checkedCells)) ? new Map(migratedData.checkedCells) : new Map();
-                  elapsedSeconds = migratedData.elapsedSeconds;
-                  isComplete = migratedData.isComplete;
+                  elapsedSeconds = migratedData.elapsedSeconds || 0;
+                  isComplete = !!migratedData.isComplete;
                 }
               }
             }
