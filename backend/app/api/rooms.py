@@ -5,8 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from ..dependencies import get_db, get_current_user
 from ..services.room_service import RoomService
 from ..services.ably_service import ably_service
@@ -14,7 +12,13 @@ from ..services.ably_service import ably_service
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/rooms", tags=["rooms"])
-limiter = Limiter(key_func=get_remote_address)
+
+# Import limiter from app.main to avoid duplicate instances
+def get_limiter():
+    from ..main import limiter
+    return limiter
+
+limiter = get_limiter()
 
 ROOM_CODE_PATTERN = re.compile(r"^[A-Z0-9]{4,8}$")
 

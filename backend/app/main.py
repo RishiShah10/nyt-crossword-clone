@@ -19,6 +19,7 @@ IS_PRODUCTION = bool(os.environ.get("VERCEL"))
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
+__all_limiters__ = [limiter] # To ensure it's not removed by linter if not used in file
 
 
 @asynccontextmanager

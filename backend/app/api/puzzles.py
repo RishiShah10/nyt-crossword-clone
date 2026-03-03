@@ -14,7 +14,13 @@ from ..dependencies import get_current_user
 
 
 router = APIRouter(prefix="/api/puzzles", tags=["puzzles"])
-limiter = Limiter(key_func=get_remote_address)
+
+# Import limiter from app.main to avoid duplicate instances
+def get_limiter():
+    from ..main import limiter
+    return limiter
+
+limiter = get_limiter()
 
 # Global service instances
 cache_service = CacheService(cache_dir=settings.CACHE_DIR)
