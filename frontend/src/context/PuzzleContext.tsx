@@ -95,81 +95,91 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
   switch (action.type) {
     case 'SET_PUZZLE': {
       const { puzzle, puzzleId, _skipLocalSave } = action.payload;
-      const grid = buildGrid(puzzle);
-      const clueMap = buildClueMap(puzzle);
+      
+      try {
+        const grid = buildGrid(puzzle);
+        const clueMap = buildClueMap(puzzle);
 
-      let userGrid = new Map<string, string>();
-      let checkedCells = new Map<string, boolean>();
-      let pencilCells = new Set<string>();
-      let elapsedSeconds = 0;
-      let isComplete = false;
+        let userGrid = new Map<string, string>();
+        let checkedCells = new Map<string, boolean>();
+        let pencilCells = new Set<string>();
+        let elapsedSeconds = 0;
+        let isComplete = false;
 
-      // In room mode, skip local saves — room state comes from the server
-      if (!_skipLocalSave) {
-        try {
-          // Try loading from new format
-          const saveData = SavesManager.loadPuzzleProgress(puzzleId);
+        // In room mode, skip local saves — room state comes from the server
+        if (!_skipLocalSave) {
+          try {
+            // Try loading from new format
+            const saveData = SavesManager.loadPuzzleProgress(puzzleId);
 
-          if (saveData) {
-            userGrid = new Map(saveData.userGrid);
-            checkedCells = new Map(saveData.checkedCells);
-            if (saveData.pencilCells) {
-              pencilCells = new Set(saveData.pencilCells);
-            }
-            elapsedSeconds = saveData.elapsedSeconds;
-            isComplete = saveData.isComplete;
-          } else {
-            // Try migrating from old format
-            const migrated = SavesManager.migrateOldSaveWithPuzzle(puzzleId, puzzle);
-            if (migrated) {
-              const migratedData = SavesManager.loadPuzzleProgress(puzzleId);
-              if (migratedData) {
-                userGrid = new Map(migratedData.userGrid);
-                checkedCells = new Map(migratedData.checkedCells);
-                elapsedSeconds = migratedData.elapsedSeconds;
-                isComplete = migratedData.isComplete;
+            if (saveData) {
+              userGrid = new Map(saveData.userGrid);
+              checkedCells = new Map(saveData.checkedCells);
+              if (saveData.pencilCells) {
+                pencilCells = new Set(saveData.pencilCells);
+              }
+              elapsedSeconds = saveData.elapsedSeconds;
+              isComplete = saveData.isComplete;
+            } else {
+              // Try migrating from old format
+              const migrated = SavesManager.migrateOldSaveWithPuzzle(puzzleId, puzzle);
+              if (migrated) {
+                const migratedData = SavesManager.loadPuzzleProgress(puzzleId);
+                if (migratedData) {
+                  userGrid = new Map(migratedData.userGrid);
+                  checkedCells = new Map(migratedData.checkedCells);
+                  elapsedSeconds = migratedData.elapsedSeconds;
+                  isComplete = migratedData.isComplete;
+                }
               }
             }
+          } catch (error) {
+            console.error('Error loading puzzle progress:', error);
+            // Start fresh on error
           }
-        } catch (error) {
-          console.error('Error loading puzzle progress:', error);
-          // Start fresh on error
         }
+
+        // Auto-select first cell (0,0) with across direction
+        const firstClue = Array.from(clueMap.values()).find(c => c.direction === 'across');
+        const initialSelection: Selection | null = firstClue && firstClue.cells.length > 0
+          ? {
+              row: firstClue.cells[0].row,
+              col: firstClue.cells[0].col,
+              direction: 'across',
+              clueNumber: firstClue.number,
+            }
+          : null;
+
+        // Highlight first word
+        const initialHighlighted: Set<string> = firstClue
+          ? new Set(firstClue.cells.map(c => `${c.row},${c.col}`))
+          : new Set<string>();
+
+        return {
+          ...state,
+          puzzle,
+          puzzleId,
+          grid,
+          clueMap,
+          userGrid,
+          checkedCells,
+          pencilCells,
+          isPencilMode: false,
+          elapsedSeconds,
+          isComplete,
+          selection: initialSelection,
+          highlightedCells: initialHighlighted,
+          isLoading: false,
+          error: null,
+        };
+      } catch (err: any) {
+        console.error('Error building puzzle grid:', err);
+        return {
+          ...state,
+          isLoading: false,
+          error: `Failed to initialize puzzle: ${err.message}`,
+        };
       }
-
-      // Auto-select first cell (0,0) with across direction
-      const firstClue = Array.from(clueMap.values()).find(c => c.direction === 'across');
-      const initialSelection: Selection | null = firstClue && firstClue.cells.length > 0
-        ? {
-            row: firstClue.cells[0].row,
-            col: firstClue.cells[0].col,
-            direction: 'across',
-            clueNumber: firstClue.number,
-          }
-        : null;
-
-      // Highlight first word
-      const initialHighlighted: Set<string> = firstClue
-        ? new Set(firstClue.cells.map(c => `${c.row},${c.col}`))
-        : new Set<string>();
-
-      return {
-        ...state,
-        puzzle,
-        puzzleId,
-        grid,
-        clueMap,
-        userGrid,
-        checkedCells,
-        pencilCells,
-        isPencilMode: false,
-        elapsedSeconds,
-        isComplete,
-        selection: initialSelection,
-        highlightedCells: initialHighlighted,
-        isLoading: false,
-        error: null,
-      };
     }
 
     case 'SET_CELL_VALUE': {
