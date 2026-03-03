@@ -16,7 +16,13 @@ from ..config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
-limiter = Limiter(key_func=get_remote_address)
+
+# Import limiter from app.main to avoid duplicate instances
+def get_limiter():
+    from ..main import limiter
+    return limiter
+
+limiter = get_limiter()
 
 # Cookie settings
 IS_PRODUCTION = bool(os.environ.get("VERCEL"))
