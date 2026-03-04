@@ -1,110 +1,109 @@
 """
-Puzzle builder — hybrid LLM + placement pipeline.
+Puzzle builder — hybrid template + CSP + LLM pipeline.
 
-Approach (from https://github.com/Rperry2174/faster_crowssword_generator):
-  1. LLM generates word+clue pairs from the topic in one call (CSV format).
-     Words and clues are generated together so they're thematically coherent.
-  2. CrosswordGenerator places them on a dynamic grid using intersection-based
-     constraint satisfaction.
-  3. Grid is trimmed to bounding box, gridnums are assigned, result is
-     converted to NYT flat format for the frontend.
+Why this architecture:
+  - faster_crowssword_generator's placement algorithm works great for large
+    open grids (15x15) but produces poor 5x5 structure: unchecked cells,
+    unbalanced across/down counts, words merely stacked rather than interlocked.
+  - 5x5 NYT-style mini crosswords require:
+      * Rotational symmetry
+      * Every white cell covered by BOTH an across and a down word (checked cells)
+      * Tight interlocking (5-6 across + 5-6 down entries)
+    — all of which are guaranteed by precomputed valid templates + CSP.
 
-The LLM has zero structural responsibility — it only provides vocabulary +
-clues. All layout guarantees come from the deterministic placement engine.
+Pipeline (best of both approaches):
+  1. LLM generates themed word+clue pairs in CSV format (faster_crowssword_generator style).
+     Words and clues are produced together → thematically coherent.
+  2. CSP backtracking fills template slots, preferring LLM theme words.
+     Guarantees valid grid structure and correct cross-letter consistency.
+  3. For any slot filled with a non-theme word, a second LLM call generates
+     its clue (batched, one call).
+  4. Final validation pass before returning.
 """
 from __future__ import annotations
 
 import datetime
+import json
 import logging
-import re
+import random
 from typing import Dict, List, Optional, Set, Tuple
 
-from .grid_generator import CrosswordGenerator, CrosswordGrid, Direction, WordPlacement
+from .csp_solver import solve
+from .grid_template import (
+    GridTemplate,
+    compute_gridnums,
+    get_template_pool,
+)
+from .slot_extractor import Slot, build_constraint_graph, extract_slots
 from .word_list import WordList
 
 logger = logging.getLogger(__name__)
 
-# Module-level singleton — loaded once, reused across requests
+# Module-level singletons
 _word_list: Optional[WordList] = None
 
 
-def _get_valid_words() -> Set[str]:
-    """Return the full ENABLE word set used for perpendicular validation."""
+def _get_word_list() -> WordList:
     global _word_list
     if _word_list is None:
         _word_list = WordList()
         logger.info("WordList singleton initialised (%d words)", len(_word_list._words))
-    return _word_list._words
+    return _word_list
 
 
-# ─── LLM word + clue generation ───────────────────────────────────────────────
+# ─── Step 1: LLM word + clue generation ───────────────────────────────────────
 
-_WORD_CLUE_SYSTEM = (
+_SYSTEM = (
     "You are a NYT Mini crossword puzzle editor. "
     "Given a theme, produce word+clue pairs for a 5x5 mini crossword. "
-    "Rules: words must be 3-5 letters only, common English words, "
-    "no proper nouns, no abbreviations, no hyphens. "
-    "Each clue must unambiguously and accurately lead to exactly that word. "
-    "Include theme-specific words where natural; fill with common short words "
-    "that share letters with theme words for crossing. "
-    "Output format: one pair per line as WORD,clue text here"
+    "All words MUST be 3, 4, or 5 letters — no exceptions. "
+    "Words must be common English words (no proper nouns, no abbreviations). "
+    "Each clue must be short (under 8 words), accurate, and unambiguously lead "
+    "to exactly that word. Tie clues to the theme where natural. "
+    "Output format: one pair per line as WORD,clue text"
 )
 
-_WORD_CLUE_USER = """\
+_USER = """\
 Theme: {topics}
 
-Generate exactly 20 crossword word+clue pairs for a 5x5 mini crossword.
-CRITICAL: every word must be exactly 3, 4, or 5 letters. No longer.
-Include both theme words AND common 3-5 letter English words that share letters.
-Output only the CSV lines — no headers, no numbering, no extra text.
+Generate 25 crossword word+clue pairs. Every word must be 3-5 letters.
+Mix theme-specific words with common short English words that share letters
+(they will cross each other in the grid).
 
-Example format:
-HOOP,Ring the ball passes through
-SLAM,Powerful dunk
-NET,Mesh below the rim
-PASS,Send the ball to a teammate
-SHOT,Scoring attempt
+Output only raw CSV lines — no headers, no numbers, no extra text:
+WORD,clue text here
 """
 
 
-async def _get_words_and_clues(
+async def _llm_word_clue_pairs(
     topics: str,
     openai_client,
 ) -> List[Tuple[str, str]]:
-    """
-    Ask the LLM for word+clue pairs. Returns list of (WORD, clue) tuples.
-    Falls back to an empty list on failure (caller will raise).
-    """
-    prompt = _WORD_CLUE_USER.format(topics=topics)
+    """Single LLM call → list of (WORD, clue) tuples, 3-5 letters only."""
     try:
         response = await openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": _WORD_CLUE_SYSTEM},
-                {"role": "user", "content": prompt},
+                {"role": "system", "content": _SYSTEM},
+                {"role": "user", "content": _USER.format(topics=topics)},
             ],
             temperature=0.7,
-            max_tokens=1000,
+            max_tokens=900,
         )
         raw = response.choices[0].message.content or ""
         return _parse_csv(raw)
     except Exception as exc:
-        logger.error("Word/clue generation failed: %s", exc)
+        logger.error("Word/clue LLM call failed: %s", exc)
         return []
 
 
 def _parse_csv(raw: str) -> List[Tuple[str, str]]:
-    """
-    Parse lines of "WORD,clue text" into validated (word, clue) tuples.
-    Skips lines that don't parse cleanly or whose word is non-alphabetic.
-    """
     pairs: List[Tuple[str, str]] = []
     seen: set[str] = set()
     for line in raw.strip().splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        # Split on first comma only
         parts = line.split(",", 1)
         if len(parts) != 2:
             continue
@@ -112,7 +111,7 @@ def _parse_csv(raw: str) -> List[Tuple[str, str]]:
         clue = parts[1].strip()
         if not word or not clue:
             continue
-        if not word.isalpha() or len(word) < 3 or len(word) > 5:  # 5x5 mini max
+        if not word.isalpha() or not (3 <= len(word) <= 5):
             continue
         if word in seen:
             continue
@@ -122,110 +121,108 @@ def _parse_csv(raw: str) -> List[Tuple[str, str]]:
     return pairs
 
 
-# ─── Grid post-processing ──────────────────────────────────────────────────────
+# ─── Step 3: Clue generation for CSP-filled non-theme words ───────────────────
 
-def _trim_grid(
-    cg: CrosswordGrid,
-) -> Tuple[List[List[Optional[str]]], List[WordPlacement], int, int]:
-    """
-    Crop the working grid to the minimum bounding box of placed letters.
-    Returns (trimmed_grid, adjusted_placements, rows, cols).
-    """
-    grid = cg.grid
-    placements = cg.word_placements
+_CLUE_SYSTEM = (
+    "You are a crossword puzzle editor. Write one short, accurate crossword clue "
+    "per word. Clues must be under 8 words and unambiguously lead to exactly that word. "
+    "Tie clues to the theme where natural, otherwise write a standard clue."
+)
 
-    filled_rows = [r for r in range(cg.height) if any(cell is not None for cell in grid[r])]
-    filled_cols = [c for c in range(cg.width) if any(grid[r][c] is not None for r in range(cg.height))]
+_CLUE_USER = """\
+Theme: {theme}
 
-    if not filled_rows or not filled_cols:
-        return grid, placements, cg.height, cg.width
+Write one clue for each word below. Return ONLY valid JSON:
+{{"clues": {{"WORD1": "clue text", "WORD2": "clue text"}}}}
 
-    min_r, max_r = min(filled_rows), max(filled_rows)
-    min_c, max_c = min(filled_cols), max(filled_cols)
+Words: {words}
+"""
 
-    trimmed = [row[min_c: max_c + 1] for row in grid[min_r: max_r + 1]]
-    rows = max_r - min_r + 1
-    cols = max_c - min_c + 1
 
-    adjusted = [
-        WordPlacement(
-            word=p.word,
-            clue=p.clue,
-            start_row=p.start_row - min_r,
-            start_col=p.start_col - min_c,
-            direction=p.direction,
+async def _generate_filler_clues(
+    words: List[str],
+    topics: str,
+    openai_client,
+) -> Dict[str, str]:
+    """Generate clues for words that the CSP placed (not from the LLM theme list)."""
+    if not words:
+        return {}
+    try:
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": _CLUE_SYSTEM},
+                {"role": "user", "content": _CLUE_USER.format(
+                    theme=topics,
+                    words=", ".join(words),
+                )},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.6,
+            max_tokens=600,
         )
-        for p in placements
-    ]
-    return trimmed, adjusted, rows, cols
+        data = json.loads(response.choices[0].message.content)
+        return {k.upper(): v for k, v in data.get("clues", {}).items()}
+    except Exception as exc:
+        logger.warning("Filler clue generation failed: %s", exc)
+        return {}
 
 
-def _assign_gridnums(
-    placements: List[WordPlacement],
-    rows: int,
-    cols: int,
-) -> Tuple[List[int], List[WordPlacement]]:
-    """
-    Assign crossword clue numbers (left-to-right, top-to-bottom).
-    A cell gets a number if it starts any across or down word.
-    Returns (flat gridnums array, placements with .number set).
-    """
-    # Collect all start cells
-    start_cells = sorted({(p.start_row, p.start_col) for p in placements})
-    cell_to_num: Dict[Tuple[int, int], int] = {
-        cell: i + 1 for i, cell in enumerate(start_cells)
-    }
+# ─── Step 2b: Slot → NYT clue-key mapping ─────────────────────────────────────
 
-    for p in placements:
-        p.number = cell_to_num[(p.start_row, p.start_col)]
-
-    gridnums = [0] * (rows * cols)
-    for (r, c), num in cell_to_num.items():
-        gridnums[r * cols + c] = num
-
-    return gridnums, placements
-
-
-# ─── NYT format assembly ───────────────────────────────────────────────────────
-
-def _to_nyt_dict(
-    grid: List[List[Optional[str]]],
-    placements: List[WordPlacement],
+def _numbered_answers(
+    assignment: Dict[Slot, str],
     gridnums: List[int],
-    rows: int,
-    cols: int,
+) -> Dict[str, str]:
+    """Map each slot to its NYT clue key, e.g. '3-across' → 'HOOP'."""
+    from .grid_template import COLS
+    result: Dict[str, str] = {}
+    for slot, word in assignment.items():
+        r, c = slot.start_row, slot.start_col
+        num = gridnums[r * COLS + c]
+        result[f"{num}-{slot.direction}"] = word
+    return result
+
+
+# ─── Step 4: NYT format assembly ──────────────────────────────────────────────
+
+def _assemble(
+    template: GridTemplate,
+    assignment: Dict[Slot, str],
+    clues: Dict[str, str],
+    gridnums: List[int],
     title: str,
 ) -> dict:
-    """
-    Convert trimmed grid + placements → NYT-format puzzle dict.
-    Empty cells become "." (black squares in NYT convention for unfilled cells).
-    """
-    flat_grid = [
-        grid[r][c] if grid[r][c] is not None else "."
-        for r in range(rows)
-        for c in range(cols)
-    ]
+    from .grid_template import ROWS, COLS
 
-    across = sorted(
-        [p for p in placements if p.direction == Direction.HORIZONTAL],
-        key=lambda p: p.number,
+    grid_letters = template.to_nyt_grid(assignment)
+
+    across_items = sorted(
+        [(k, v) for k, v in clues.items() if k.endswith("-across")],
+        key=lambda x: int(x[0].split("-")[0]),
     )
-    down = sorted(
-        [p for p in placements if p.direction == Direction.VERTICAL],
-        key=lambda p: p.number,
+    down_items = sorted(
+        [(k, v) for k, v in clues.items() if k.endswith("-down")],
+        key=lambda x: int(x[0].split("-")[0]),
     )
+
+    slot_by_key: Dict[str, str] = {}
+    for slot, word in assignment.items():
+        r, c = slot.start_row, slot.start_col
+        num = gridnums[r * COLS + c]
+        slot_by_key[f"{num}-{slot.direction}"] = word
 
     return {
-        "size": {"rows": rows, "cols": cols},
-        "grid": flat_grid,
+        "size": {"rows": ROWS, "cols": COLS},
+        "grid": grid_letters,
         "gridnums": gridnums,
         "clues": {
-            "across": [f"{p.number}. {p.clue}" for p in across],
-            "down": [f"{p.number}. {p.clue}" for p in down],
+            "across": [f"{k.split('-')[0]}. {v}" for k, v in across_items],
+            "down":   [f"{k.split('-')[0]}. {v}" for k, v in down_items],
         },
         "answers": {
-            "across": [p.word for p in across],
-            "down": [p.word for p in down],
+            "across": [slot_by_key[k] for k, _ in across_items],
+            "down":   [slot_by_key[k] for k, _ in down_items],
         },
         "title": title,
         "author": "AI Generator",
@@ -233,19 +230,18 @@ def _to_nyt_dict(
     }
 
 
-def _validate(puzzle: dict) -> bool:
-    """Basic sanity check on the assembled puzzle."""
-    size = puzzle.get("size", {})
-    rows, cols = size.get("rows", 0), size.get("cols", 0)
-    expected = rows * cols
-    if expected == 0:
-        return False
-    if len(puzzle.get("grid", [])) != expected:
-        logger.error("Grid length mismatch: got %d expected %d", len(puzzle.get("grid", [])), expected)
+def _validate(puzzle: dict, word_list: WordList) -> bool:
+    from .grid_template import ROWS, COLS
+    grid = puzzle.get("grid", [])
+    if len(grid) != ROWS * COLS:
         return False
     if not puzzle["clues"]["across"] or not puzzle["clues"]["down"]:
-        logger.error("Missing across or down clues")
         return False
+    for answers in (puzzle["answers"]["across"], puzzle["answers"]["down"]):
+        for word in answers:
+            if not word_list.is_valid(word):
+                logger.error("Validation: '%s' not in word list", word)
+                return False
     return True
 
 
@@ -255,72 +251,88 @@ async def build_puzzle(
     topics: str,
     title: str,
     openai_client,
-    max_attempts: int = 5,
+    max_attempts: int = 20,
 ) -> dict:
     """
     Full pipeline:
-      1. LLM generates word+clue pairs from topics (single call, CSV format)
-      2. CrosswordGenerator places them on a grid (intersection-based)
-      3. Trim bounding box → assign gridnums → convert to NYT format
-
-    Retries up to max_attempts with fresh random seeds if the grid has
-    too few words placed (< 4 across + down).
-
-    Returns NYT-format puzzle dict.
-    Raises RuntimeError if all attempts fail.
+      1. LLM → themed word+clue pairs (CSV, 3-5 letters)
+      2. CSP + valid 5x5 template → guaranteed proper mini crossword structure
+         (checked cells, rotational symmetry, all slots filled)
+      3. Clues assembled: theme words use LLM clues; CSP-placed fillers get
+         a batched LLM clue call
+      4. Validate + return NYT-format dict
     """
-    # Step 1: get words + clues from LLM (done once, reused across attempts)
-    words_with_clues = await _get_words_and_clues(topics, openai_client)
-    if len(words_with_clues) < 3:
-        raise RuntimeError(
-            f"LLM returned too few words ({len(words_with_clues)}) for topics '{topics}'. "
-            "Try a different topic."
-        )
+    word_list = _get_word_list()
+    template_pool = get_template_pool()
 
+    # Step 1 ── LLM word+clue pairs
+    pairs = await _llm_word_clue_pairs(topics, openai_client)
+
+    # Separate into validated theme words (in our word list) + their clues
+    theme_clue_map: Dict[str, str] = {}
+    for word, clue in pairs:
+        if word_list.is_valid(word):
+            theme_clue_map[word] = clue
+
+    theme_words: Set[str] = set(theme_clue_map.keys())
     logger.info(
-        "Generating crossword for '%s' with %d candidate words",
-        topics, len(words_with_clues),
+        "Theme: %d LLM words, %d validated against word list: %s",
+        len(pairs), len(theme_words), sorted(theme_words),
     )
 
-    ROWS, COLS = 5, 5
+    # Step 2 ── CSP solve across shuffled templates
+    shuffled = random.sample(template_pool, len(template_pool))
 
-    for attempt in range(max_attempts):
-        # Step 2: placement in fixed 5x5 grid
-        # strict_perp=False: empty cells act as black squares so adjacent letters
-        # from different words don't need to form valid perpendicular words.
-        generator = CrosswordGenerator(
-            words_with_clues,
-            valid_words=_get_valid_words(),
-            grid_size=ROWS,
-            strict_perp=False,
+    for attempt, template in enumerate(shuffled * (max_attempts // len(shuffled) + 1)):
+        if attempt >= max_attempts:
+            break
+
+        slots = extract_slots(template)
+        constraints = build_constraint_graph(slots)
+
+        assignment = solve(
+            slots,
+            constraints,
+            word_list,
+            theme_words=theme_words,
+            min_theme_words=min(2, len(theme_words)),
         )
-        cg = generator.generate()
-
-        across_count = sum(1 for p in cg.word_placements if p.direction == Direction.HORIZONTAL)
-        down_count = sum(1 for p in cg.word_placements if p.direction == Direction.VERTICAL)
-
-        if across_count < 2 or down_count < 2:
-            logger.debug(
-                "Attempt %d: only %d across / %d down — retrying",
-                attempt + 1, across_count, down_count,
-            )
+        if assignment is None:
             continue
 
-        # Step 3: assign gridnums + assemble (no trimming — grid is fixed 5x5)
-        placements = cg.word_placements
-        gridnums, placements = _assign_gridnums(placements, ROWS, COLS)
-        puzzle = _to_nyt_dict(cg.grid, placements, gridnums, ROWS, COLS, title)
+        # Step 3 ── Build clue map
+        gridnums = compute_gridnums(template.grid)
+        numbered = _numbered_answers(assignment, gridnums)
 
-        if _validate(puzzle):
+        clue_map: Dict[str, str] = {}
+        filler_words: List[str] = []
+
+        for key, word in numbered.items():
+            if word in theme_clue_map:
+                clue_map[key] = theme_clue_map[word]
+            else:
+                filler_words.append(word)
+
+        # One batched LLM call for all filler words
+        if filler_words:
+            filler_clues = await _generate_filler_clues(filler_words, topics, openai_client)
+            for key, word in numbered.items():
+                if word in filler_clues:
+                    clue_map[key] = filler_clues[word]
+                elif key not in clue_map:
+                    clue_map[key] = f"{word.lower().capitalize()}"  # last-resort fallback
+
+        # Step 4 ── Assemble + validate
+        puzzle = _assemble(template, assignment, clue_map, gridnums, title)
+        if _validate(puzzle, word_list):
+            theme_used = [w for w in assignment.values() if w in theme_words]
             logger.info(
-                "Puzzle built on attempt %d: 5x5, %d across, %d down",
-                attempt + 1, across_count, down_count,
+                "Puzzle built on attempt %d. Theme words used: %s",
+                attempt + 1, theme_used,
             )
             return puzzle
 
-        logger.warning("Attempt %d: validation failed — retrying", attempt + 1)
-
     raise RuntimeError(
-        f"Could not generate a valid 5x5 puzzle for '{topics}' after {max_attempts} attempts. "
-        "Try different topics."
+        f"Could not generate a valid 5x5 puzzle for '{topics}' "
+        f"after {max_attempts} attempts. Try different topics."
     )
