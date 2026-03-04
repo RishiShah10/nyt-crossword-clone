@@ -59,6 +59,7 @@ class CrosswordGenerator:
         words_with_clues: List[Tuple[str, str]],
         valid_words: Optional[set[str]] = None,
         grid_size: int = 17,
+        strict_perp: bool = True,
     ) -> None:
         # Normalise + filter
         clean: List[Tuple[str, str]] = []
@@ -70,6 +71,10 @@ class CrosswordGenerator:
                 seen.add(w)
         self.words_with_clues = clean
         self.grid_size = grid_size
+        # strict_perp=False for mini grids: empty cells act as black squares,
+        # so adjacent letters from different words are naturally separated and
+        # don't need to form valid words.
+        self.strict_perp = strict_perp
         # Use full word list for perpendicular validation; fall back to theme-only
         self.word_set: set[str] = valid_words if valid_words else {w for w, _ in clean}
 
@@ -87,7 +92,12 @@ class CrosswordGenerator:
         Placing `char` at (row, col) as part of a word in `placement_dir`:
         verify it won't accidentally form an invalid word in the perpendicular
         direction by joining with adjacent existing letters.
+
+        In mini (5x5) mode strict_perp=False — empty cells act as black squares
+        and words don't need perpendicular coverage of every cell.
         """
+        if not self.strict_perp:
+            return True
         if placement_dir == Direction.HORIZONTAL:
             # Scan the column for adjacent letters
             start_r = row

@@ -40,28 +40,30 @@ def _get_valid_words() -> Set[str]:
 # ─── LLM word + clue generation ───────────────────────────────────────────────
 
 _WORD_CLUE_SYSTEM = (
-    "You are a crossword puzzle editor. "
-    "Given a theme, produce word+clue pairs for a crossword puzzle. "
-    "Rules: words must be common English words (3-12 letters, no proper nouns, "
-    "no abbreviations, no hyphens). "
+    "You are a NYT Mini crossword puzzle editor. "
+    "Given a theme, produce word+clue pairs for a 5x5 mini crossword. "
+    "Rules: words must be 3-5 letters only, common English words, "
+    "no proper nouns, no abbreviations, no hyphens. "
     "Each clue must unambiguously and accurately lead to exactly that word. "
-    "Include theme words where natural; fill remaining slots with common words "
-    "that will cross nicely. "
+    "Include theme-specific words where natural; fill with common short words "
+    "that share letters with theme words for crossing. "
     "Output format: one pair per line as WORD,clue text here"
 )
 
 _WORD_CLUE_USER = """\
 Theme: {topics}
 
-Generate exactly 30 crossword word+clue pairs related to this theme.
-Prioritize words of 4-8 letters — they create more intersections.
-Include both theme-specific words AND common English words that relate naturally.
+Generate exactly 20 crossword word+clue pairs for a 5x5 mini crossword.
+CRITICAL: every word must be exactly 3, 4, or 5 letters. No longer.
+Include both theme words AND common 3-5 letter English words that share letters.
 Output only the CSV lines — no headers, no numbering, no extra text.
 
 Example format:
-HOOP,Circular ring a basketball passes through
-SLAM,Forceful dunk shot
-ARCH,Curved structure overhead
+HOOP,Ring the ball passes through
+SLAM,Powerful dunk
+NET,Mesh below the rim
+PASS,Send the ball to a teammate
+SHOT,Scoring attempt
 """
 
 
@@ -110,7 +112,7 @@ def _parse_csv(raw: str) -> List[Tuple[str, str]]:
         clue = parts[1].strip()
         if not word or not clue:
             continue
-        if not word.isalpha() or len(word) < 3:
+        if not word.isalpha() or len(word) < 3 or len(word) > 5:  # 5x5 mini max
             continue
         if word in seen:
             continue
@@ -280,16 +282,20 @@ async def build_puzzle(
         topics, len(words_with_clues),
     )
 
+    ROWS, COLS = 5, 5
+
     for attempt in range(max_attempts):
-        # Step 2: placement (random seed varies each attempt)
+        # Step 2: placement in fixed 5x5 grid
+        # strict_perp=False: empty cells act as black squares so adjacent letters
+        # from different words don't need to form valid perpendicular words.
         generator = CrosswordGenerator(
             words_with_clues,
             valid_words=_get_valid_words(),
-            grid_size=17,
+            grid_size=ROWS,
+            strict_perp=False,
         )
         cg = generator.generate()
 
-        placed = len(cg.word_placements)
         across_count = sum(1 for p in cg.word_placements if p.direction == Direction.HORIZONTAL)
         down_count = sum(1 for p in cg.word_placements if p.direction == Direction.VERTICAL)
 
@@ -300,21 +306,21 @@ async def build_puzzle(
             )
             continue
 
-        # Step 3: trim + number + assemble
-        grid, placements, rows, cols = _trim_grid(cg)
-        gridnums, placements = _assign_gridnums(placements, rows, cols)
-        puzzle = _to_nyt_dict(grid, placements, gridnums, rows, cols, title)
+        # Step 3: assign gridnums + assemble (no trimming — grid is fixed 5x5)
+        placements = cg.word_placements
+        gridnums, placements = _assign_gridnums(placements, ROWS, COLS)
+        puzzle = _to_nyt_dict(cg.grid, placements, gridnums, ROWS, COLS, title)
 
         if _validate(puzzle):
             logger.info(
-                "Puzzle built on attempt %d: %dx%d grid, %d across, %d down",
-                attempt + 1, rows, cols, across_count, down_count,
+                "Puzzle built on attempt %d: 5x5, %d across, %d down",
+                attempt + 1, across_count, down_count,
             )
             return puzzle
 
         logger.warning("Attempt %d: validation failed — retrying", attempt + 1)
 
     raise RuntimeError(
-        f"Could not generate a valid puzzle for '{topics}' after {max_attempts} attempts. "
+        f"Could not generate a valid 5x5 puzzle for '{topics}' after {max_attempts} attempts. "
         "Try different topics."
     )
