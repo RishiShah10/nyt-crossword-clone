@@ -23,12 +23,10 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 ENABLE_URL = (
     "https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt"
 )
-# Google 10k most common English words — used to frequency-rank ENABLE words
-# so the CSP picks familiar words over obscure ones.
-FREQ_URL = (
-    "https://raw.githubusercontent.com/first20hours/google-10000-english"
-    "/master/google-10000-english-no-swears.txt"
-)
+# Peter Norvig's word frequency data — tab-separated "word\tcount" lines,
+# sorted by frequency descending.  We take only the top 50k entries so that
+# the CSP never picks obscure words like PSOAE, AMAHS, or TROIS.
+FREQ_URL = "http://norvig.com/ngrams/count_1w.txt"
 
 WORD_LIST_PATH = DATA_DIR / "word_list.txt"
 TEMPLATES_PATH = DATA_DIR / "valid_templates.json"
@@ -170,8 +168,11 @@ def build_word_list() -> list[str]:
     Strategy:
       1. ENABLE1 is the authority for "real" words (curated Scrabble dictionary,
          no abbreviations, no proper nouns).  Eliminates SPAAD, MDNT, BEDOT, etc.
-      2. Google 10k word list provides frequency ranking so the CSP prefers
-         familiar words (SLAM, HOOP, HELP) over obscure valid ones (YAFF, WISS).
+      2. Peter Norvig's word frequency data (count_1w.txt) provides frequency
+         ranking.  We take only the TOP 25,000 entries from that file and require
+         every kept word to appear in that set.  This eliminates obscure valid
+         Scrabble words like PSOAE, AMAHS, TROIS, TYE, INERT that the CSP was
+         using as filler, while retaining common words like NET, HOOP, BALL, TEAM.
     Words are saved most-common-first so WordList.get_candidates() can sort
     matches by insertion order (= frequency rank) instead of alphabetically.
     """
@@ -186,19 +187,35 @@ def build_word_list() -> list[str]:
             enable_words.add(w)
     print(f"  ENABLE: {len(enable_words):,} valid 3-5 letter words")
 
+    TOP_N = 25_000
     print(f"Downloading frequency list from {FREQ_URL} …")
-    with urllib.request.urlopen(FREQ_URL, timeout=30) as resp:
+    with urllib.request.urlopen(FREQ_URL, timeout=60) as resp:
         freq_raw = resp.read().decode("utf-8")
 
-    # Build rank dict: lower = more common. Words not in top-10k get rank 999999.
+    # Norvig format: "word\tcount" per line, already sorted frequency-descending.
+    # Take the top TOP_N entries; build both a rank dict and a membership set.
     freq_rank: dict[str, int] = {}
-    for i, line in enumerate(freq_raw.splitlines()):
-        w = line.strip().upper()
-        if w:
-            freq_rank[w] = i
+    top_freq: set[str] = set()
+    rank = 0
+    for line in freq_raw.splitlines():
+        if rank >= TOP_N:
+            break
+        parts = line.split("\t", 1)
+        if not parts:
+            continue
+        w = parts[0].strip().upper()
+        if w and w.isalpha():
+            freq_rank[w] = rank
+            top_freq.add(w)
+            rank += 1
+    print(f"  Norvig top-{TOP_N}: {len(top_freq):,} unique alpha words loaded")
 
-    # Sort ENABLE words by frequency rank (most common first), then alphabetically
-    words = sorted(enable_words, key=lambda w: (freq_rank.get(w, 999_999), w))
+    # Keep only ENABLE words that also appear in the top-frequency set.
+    filtered = enable_words & top_freq
+    print(f"  After intersection: {len(filtered):,} words remain")
+
+    # Sort most-common-first (by Norvig rank), then alphabetically as tiebreak.
+    words = sorted(filtered, key=lambda w: (freq_rank.get(w, 999_999), w))
     print(f"  Final word list: {len(words):,} words (frequency-ordered)")
     return words
 

@@ -13,11 +13,12 @@ Why this architecture:
 
 Pipeline (best of both approaches):
   1. LLM generates themed word+clue pairs in CSV format (faster_crowssword_generator style).
-     Words and clues are produced together → thematically coherent.
+     Words and clues are produced together → used to bias CSP toward theme words.
   2. CSP backtracking fills template slots, preferring LLM theme words.
      Guarantees valid grid structure and correct cross-letter consistency.
-  3. For any slot filled with a non-theme word, a second LLM call generates
-     its clue (batched, one call).
+  3. ONE final LLM call receives ALL answered words and generates themed clues
+     for every single word — giving the editor full puzzle context and forcing
+     thematic angles even for common filler words.
   4. Final validation pass before returning.
 """
 from __future__ import annotations
@@ -121,50 +122,65 @@ def _parse_csv(raw: str) -> List[Tuple[str, str]]:
     return pairs
 
 
-# ─── Step 3: Clue generation for CSP-filled non-theme words ───────────────────
+# ─── Step 3: Unified themed clue generation for ALL answers ───────────────────
 
-_CLUE_SYSTEM = (
-    "You are a crossword puzzle editor. Write one short, accurate crossword clue "
-    "per word. Clues must be under 8 words and unambiguously lead to exactly that word. "
-    "Tie clues to the theme where natural, otherwise write a standard clue."
+_FINAL_CLUE_SYSTEM = (
+    "You are an expert NYT Mini crossword editor. Your skill is writing clues where "
+    "EVERY answer connects to the puzzle theme, even ordinary English words. You find "
+    "creative, accurate thematic angles for any word."
 )
 
-_CLUE_USER = """\
-Theme: {theme}
+_FINAL_CLUE_USER = """\
+This is a {topics}-themed mini crossword. Write one clue per answer.
 
-Write one clue for each word below. Return ONLY valid JSON:
-{{"clues": {{"WORD1": "clue text", "WORD2": "clue text"}}}}
+RULES:
+- EVERY clue must connect to "{topics}" — directly, metaphorically, or via wordplay
+- Clues must be short (under 8 words), accurate, and lead unambiguously to that exact word
+- Do NOT use the answer word in its own clue
+- For directly related words: write a clear sports/theme clue
+- For common words: find a creative angle (e.g. for a basketball theme: NEST → "Net + rest; where a swish ends up", EACH → "___ player on the court", TROOP → "Team, in military parlance")
 
-Words: {words}
+Answers:
+{answer_block}
+
+Return ONLY valid JSON:
+{{"clues": {{"1-across": "clue text", "2-down": "clue text", ...}}}}
 """
 
 
-async def _generate_filler_clues(
-    words: List[str],
+async def _generate_all_clues(
+    numbered: Dict[str, str],
     topics: str,
     openai_client,
 ) -> Dict[str, str]:
-    """Generate clues for words that the CSP placed (not from the LLM theme list)."""
-    if not words:
+    """Single LLM call that generates themed clues for ALL puzzle answers."""
+    if not numbered:
         return {}
+    answer_block = "\n".join(
+        f"  {key}: {word}" for key, word in sorted(
+            numbered.items(),
+            key=lambda kv: (int(kv[0].split("-")[0]), kv[0].split("-")[1]),
+        )
+    )
     try:
         response = await openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": _CLUE_SYSTEM},
-                {"role": "user", "content": _CLUE_USER.format(
-                    theme=topics,
-                    words=", ".join(words),
+                {"role": "system", "content": _FINAL_CLUE_SYSTEM},
+                {"role": "user", "content": _FINAL_CLUE_USER.format(
+                    topics=topics,
+                    answer_block=answer_block,
                 )},
             ],
             response_format={"type": "json_object"},
-            temperature=0.6,
-            max_tokens=600,
+            temperature=0.7,
+            max_tokens=900,
         )
         data = json.loads(response.choices[0].message.content)
-        return {k.upper(): v for k, v in data.get("clues", {}).items()}
+        # Normalize keys to lowercase e.g. "1-Across" → "1-across"
+        return {k.lower(): v for k, v in data.get("clues", {}).items()}
     except Exception as exc:
-        logger.warning("Filler clue generation failed: %s", exc)
+        logger.warning("Unified clue generation failed: %s", exc)
         return {}
 
 
@@ -255,26 +271,25 @@ async def build_puzzle(
 ) -> dict:
     """
     Full pipeline:
-      1. LLM → themed word+clue pairs (CSV, 3-5 letters)
+      1. LLM → themed word+clue pairs (CSV, 3-5 letters) — used for CSP preference only
       2. CSP + valid 5x5 template → guaranteed proper mini crossword structure
          (checked cells, rotational symmetry, all slots filled)
-      3. Clues assembled: theme words use LLM clues; CSP-placed fillers get
-         a batched LLM clue call
+      3. ONE final LLM call generates themed clues for ALL answered words together,
+         giving full puzzle context and forcing thematic angles for every entry
       4. Validate + return NYT-format dict
     """
     word_list = _get_word_list()
     template_pool = get_template_pool()
 
-    # Step 1 ── LLM word+clue pairs
+    # Step 1 ── LLM word+clue pairs (used only to bias CSP toward theme words)
     pairs = await _llm_word_clue_pairs(topics, openai_client)
 
-    # Separate into validated theme words (in our word list) + their clues
-    theme_clue_map: Dict[str, str] = {}
-    for word, clue in pairs:
+    # Validate theme words against our word list
+    theme_words: Set[str] = set()
+    for word, _clue in pairs:
         if word_list.is_valid(word):
-            theme_clue_map[word] = clue
+            theme_words.add(word)
 
-    theme_words: Set[str] = set(theme_clue_map.keys())
     logger.info(
         "Theme: %d LLM words, %d validated against word list: %s",
         len(pairs), len(theme_words), sorted(theme_words),
@@ -295,32 +310,21 @@ async def build_puzzle(
             constraints,
             word_list,
             theme_words=theme_words,
-            min_theme_words=min(2, len(theme_words)),
+            min_theme_words=min(3, len(theme_words)),
         )
         if assignment is None:
             continue
 
-        # Step 3 ── Build clue map
+        # Step 3 ── Single unified LLM call for ALL clues with full puzzle context
         gridnums = compute_gridnums(template.grid)
         numbered = _numbered_answers(assignment, gridnums)
 
-        clue_map: Dict[str, str] = {}
-        filler_words: List[str] = []
+        clue_map = await _generate_all_clues(numbered, topics, openai_client)
 
+        # Last-resort fallback: any key missing from LLM response gets a plain clue
         for key, word in numbered.items():
-            if word in theme_clue_map:
-                clue_map[key] = theme_clue_map[word]
-            else:
-                filler_words.append(word)
-
-        # One batched LLM call for all filler words
-        if filler_words:
-            filler_clues = await _generate_filler_clues(filler_words, topics, openai_client)
-            for key, word in numbered.items():
-                if word in filler_clues:
-                    clue_map[key] = filler_clues[word]
-                elif key not in clue_map:
-                    clue_map[key] = f"{word.lower().capitalize()}"  # last-resort fallback
+            if key not in clue_map:
+                clue_map[key] = word.lower().capitalize()
 
         # Step 4 ── Assemble + validate
         puzzle = _assemble(template, assignment, clue_map, gridnums, title)
