@@ -82,16 +82,20 @@ class Trie:
 
 class WordList:
     """
-    Word list backed by a Trie, with optional frequency scoring.
+    Word list backed by a Trie, with frequency-based candidate ordering.
 
-    get_candidates(pattern, theme_words) returns matches ordered:
+    The word file is expected to be sorted most-common-first (as produced by
+    build_crossword_data.py).  get_candidates() returns matches ordered:
       1. Theme words (exact set membership)
-      2. All other words (alphabetical — frequency data is optional)
+      2. All other words sorted by frequency rank (common words first)
+
+    This means the CSP naturally tries SLAM/HOOP/HELP before YAFF/WISS.
     """
 
     def __init__(self, word_file: Optional[str] = None) -> None:
         self.trie = Trie()
         self._words: set[str] = set()
+        self._freq_rank: Dict[str, int] = {}  # lower = more common
         path = Path(word_file) if word_file else DEFAULT_WORD_FILE
         self._load(path)
 
@@ -108,6 +112,7 @@ class WordList:
                 if word and word.isalpha():
                     self.trie.insert(word)
                     self._words.add(word)
+                    self._freq_rank[word] = count  # file order = frequency rank
                     count += 1
         logger.info("WordList loaded %d words from %s", count, path)
 
@@ -120,11 +125,13 @@ class WordList:
         theme_words: Optional[set[str]] = None,
     ) -> List[str]:
         """
-        Return all words matching the pattern, theme-first.
+        Return all words matching the pattern, theme-first then frequency-ordered.
         pattern: list of str or None (None = wildcard)
         theme_words: set of uppercase words to prioritize
         """
         matches = self.trie.words_matching(pattern)
+        # Sort by frequency rank — most common words tried first by the CSP
+        matches.sort(key=lambda w: self._freq_rank.get(w, 999_999))
         if not theme_words:
             return matches
         theme = [w for w in matches if w in theme_words]

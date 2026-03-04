@@ -17,9 +17,19 @@ from collections import deque
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parent.parent / "data"
-WORD_LIST_URL = (
-    "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt"
+
+# ENABLE1 — curated English word list (used in Scrabble/crosswords).
+# No abbreviations, no proper nouns. Much cleaner than words_alpha.txt.
+ENABLE_URL = (
+    "https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt"
 )
+# Google 10k most common English words — used to frequency-rank ENABLE words
+# so the CSP picks familiar words over obscure ones.
+FREQ_URL = (
+    "https://raw.githubusercontent.com/first20hours/google-10000-english"
+    "/master/google-10000-english-no-swears.txt"
+)
+
 WORD_LIST_PATH = DATA_DIR / "word_list.txt"
 TEMPLATES_PATH = DATA_DIR / "valid_templates.json"
 
@@ -154,25 +164,43 @@ def generate_templates() -> list[list[bool]]:
 # ─── Word list ────────────────────────────────────────────────────────────────
 
 def build_word_list() -> list[str]:
-    print(f"Downloading word list from {WORD_LIST_URL} …")
-    with urllib.request.urlopen(WORD_LIST_URL, timeout=30) as resp:
-        raw = resp.read().decode("utf-8")
+    """
+    Build a frequency-ordered list of 3-5 letter English words.
 
-    words = []
-    for line in raw.splitlines():
+    Strategy:
+      1. ENABLE1 is the authority for "real" words (curated Scrabble dictionary,
+         no abbreviations, no proper nouns).  Eliminates SPAAD, MDNT, BEDOT, etc.
+      2. Google 10k word list provides frequency ranking so the CSP prefers
+         familiar words (SLAM, HOOP, HELP) over obscure valid ones (YAFF, WISS).
+    Words are saved most-common-first so WordList.get_candidates() can sort
+    matches by insertion order (= frequency rank) instead of alphabetically.
+    """
+    print(f"Downloading ENABLE word list from {ENABLE_URL} …")
+    with urllib.request.urlopen(ENABLE_URL, timeout=30) as resp:
+        enable_raw = resp.read().decode("utf-8")
+
+    enable_words: set[str] = set()
+    for line in enable_raw.splitlines():
         w = line.strip().upper()
-        if MIN_WORD_LEN <= len(w) <= 5 and w.isalpha():
-            words.append(w)
+        if w and w.isalpha() and MIN_WORD_LEN <= len(w) <= 5:
+            enable_words.add(w)
+    print(f"  ENABLE: {len(enable_words):,} valid 3-5 letter words")
 
-    # Deduplicate while preserving order
-    seen: set[str] = set()
-    unique = []
-    for w in words:
-        if w not in seen:
-            seen.add(w)
-            unique.append(w)
+    print(f"Downloading frequency list from {FREQ_URL} …")
+    with urllib.request.urlopen(FREQ_URL, timeout=30) as resp:
+        freq_raw = resp.read().decode("utf-8")
 
-    return sorted(unique)
+    # Build rank dict: lower = more common. Words not in top-10k get rank 999999.
+    freq_rank: dict[str, int] = {}
+    for i, line in enumerate(freq_raw.splitlines()):
+        w = line.strip().upper()
+        if w:
+            freq_rank[w] = i
+
+    # Sort ENABLE words by frequency rank (most common first), then alphabetically
+    words = sorted(enable_words, key=lambda w: (freq_rank.get(w, 999_999), w))
+    print(f"  Final word list: {len(words):,} words (frequency-ordered)")
+    return words
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────

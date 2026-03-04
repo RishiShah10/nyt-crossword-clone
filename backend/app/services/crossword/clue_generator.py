@@ -10,31 +10,32 @@ logger = logging.getLogger(__name__)
 # It has zero structural responsibility; its only job is to write
 # a witty, themed clue for each word.
 _SYSTEM = (
-    "You are a witty crossword puzzle editor. "
-    "You write clues that are clever, punny, or thematically resonant. "
-    "You never include the answer word itself in a clue. "
-    "Clues are concise — typically under 8 words."
+    "You are an expert NYT crossword puzzle editor. "
+    "Your job: write one clue per answer word. Each clue must be factually accurate "
+    "and unambiguously lead to EXACTLY the given answer — not a similar word. "
+    "Be clever, punny, or thematic where natural, but factual accuracy comes first. "
+    "Never include the answer word in the clue. Clues are concise (under 10 words). "
+    "Use standard crossword conventions: abbr. for abbreviations, ___ for fill-in-the-blank."
 )
 
 _USER_TEMPLATE = """\
 Theme: {theme}
 
-Write one crossword clue per answer below. Rules:
-- Clue must be uniquely solvable to that exact answer word
-- Make it fun, playful, or themed where natural
-- Never use the answer word in the clue
-- Use wordplay, puns, or misdirection where appropriate
-- Keep each clue under 10 words
+Write one crossword clue for each answer. Requirements:
+- The clue must factually and unambiguously point to EXACTLY that word (not a synonym or similar word)
+- Tie the clue to the theme "{theme}" if natural, otherwise write a standard crossword clue
+- Never use the answer word or an obvious inflection of it in the clue
+- Keep clues concise (under 10 words)
+- For uncommon words, use "Old word for ___" or "___ (archaic)" style
 
 Answers:
 {answer_block}
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON:
 {{
   "clues": {{
     "1-across": "clue text",
-    "2-down": "clue text",
-    ...
+    "2-down": "clue text"
   }}
 }}
 """
@@ -68,13 +69,13 @@ async def generate_clues(
 
     try:
         response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",  # cheaper/faster — clues don't need gpt-4o
+            model="gpt-4o",  # better factual accuracy for clue writing
             messages=[
                 {"role": "system", "content": _SYSTEM},
                 {"role": "user", "content": user_msg},
             ],
             response_format={"type": "json_object"},
-            temperature=0.9,  # creative for clues — structure already guaranteed
+            temperature=0.7,
             max_tokens=800,
         )
         data = json.loads(response.choices[0].message.content)
