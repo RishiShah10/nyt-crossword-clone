@@ -4,7 +4,11 @@ import ClueItem from './ClueItem';
 import { getClueKeyForCell } from '../../utils/gridUtils';
 import styles from './ClueList.module.css';
 
-const ClueList: React.FC = () => {
+interface ClueListProps {
+  onClueClick?: () => void;
+}
+
+const ClueList: React.FC<ClueListProps> = ({ onClueClick }) => {
   const { state, dispatch } = usePuzzle();
 
   if (!state.puzzle || !state.clueMap || !state.grid) {
@@ -40,6 +44,7 @@ const ClueList: React.FC = () => {
     // Update highlighted cells
     const highlighted = new Set(clue.cells.map(c => `${c.row},${c.col}`));
     dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
+    onClueClick?.();
   };
 
   // Navigate to previous/next clue in a list

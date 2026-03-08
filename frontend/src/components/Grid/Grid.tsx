@@ -3,6 +3,7 @@ import { usePuzzle } from '../../context/PuzzleContext';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { useRoom } from '../../context/RoomContext';
 import { useAuth } from '../../context/AuthContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import Cell from './Cell';
 import { getClueKeyForCell, getCellsForClue } from '../../utils/gridUtils';
 import styles from './Grid.module.css';
@@ -41,6 +42,7 @@ const Grid: React.FC = () => {
   const myHighlightColor = isInRoom && myMember ? HIGHLIGHT_COLORS[myMember.color] : undefined;
   const mySelectedColor = isInRoom && myMember ? SELECTED_COLORS[myMember.color] : undefined;
   const myCursorColor = isInRoom && myMember ? myMember.color : undefined;
+  const isMobile = useIsMobile();
   useKeyboard(); // Enable keyboard navigation
 
   if (!state.grid || !state.clueMap) {
@@ -221,6 +223,7 @@ const Grid: React.FC = () => {
                 myHighlightColor={myHighlightColor}
                 mySelectedColor={mySelectedColor}
                 myCursorColor={myCursorColor}
+                isReadOnly={isMobile}
                 onClick={() => handleCellClick(rowIndex, colIndex)}
                 onChange={(val) => handleCellChange(rowIndex, colIndex, val)}
                 onKeyDown={(e) => handleKeyDown(rowIndex, colIndex, e)}

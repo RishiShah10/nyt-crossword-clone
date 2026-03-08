@@ -1,16 +1,15 @@
 import { useEffect } from 'react';
 import { usePuzzle } from '../context/PuzzleContext';
+import { useKeyboardActions } from './useKeyboardActions';
 import {
   handleArrowKey,
-  getNextWord,
-  getPreviousWord,
-  getPreviousCellInWordOrPreviousWord,
 } from '../utils/navigationUtils';
 import { getClueKeyForCell, getCellsForClue } from '../utils/gridUtils';
 
 export function useKeyboard() {
   const { state, dispatch } = usePuzzle();
-  const { grid, clueMap, selection, userGrid } = state;
+  const { grid, clueMap, selection } = state;
+  const actions = useKeyboardActions();
 
   useEffect(() => {
     if (!grid || !clueMap || !selection) return;
@@ -70,25 +69,10 @@ export function useKeyboard() {
       // Tab - previous word, Shift+Tab - next word
       if (e.key === 'Tab') {
         e.preventDefault();
-        const result = e.shiftKey
-          ? getNextWord(grid, row, col, direction, clueMap)
-          : getPreviousWord(grid, row, col, direction, clueMap);
-
-        if (result) {
-          const clueKey = getClueKeyForCell(grid, result.row, result.col, result.direction, clueMap);
-          let targetRow = result.row;
-          let targetCol = result.col;
-          if (clueKey) {
-            const cells = getCellsForClue(clueKey, clueMap);
-            const highlighted = new Set(cells.map(c => `${c.row},${c.col}`));
-            dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
-            const emptyCell = cells.find(c => !userGrid.get(`${c.row},${c.col}`));
-            if (emptyCell) { targetRow = emptyCell.row; targetCol = emptyCell.col; }
-          }
-          dispatch({
-            type: 'SET_SELECTION',
-            payload: { row: targetRow, col: targetCol, direction: result.direction, clueNumber: grid[targetRow][targetCol].number },
-          });
+        if (e.shiftKey) {
+          actions.handleNextWord();
+        } else {
+          actions.handlePrevWord();
         }
         return;
       }
@@ -96,60 +80,14 @@ export function useKeyboard() {
       // Space bar - toggle direction
       if (e.key === ' ') {
         e.preventDefault();
-        dispatch({ type: 'TOGGLE_DIRECTION' });
-
-        // Update highlighted cells with new direction
-        const newDirection = direction === 'across' ? 'down' : 'across';
-        const clueKey = getClueKeyForCell(grid, row, col, newDirection, clueMap);
-        if (clueKey) {
-          const cells = getCellsForClue(clueKey, clueMap);
-          const highlighted = new Set(cells.map(c => `${c.row},${c.col}`));
-          dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
-        }
+        actions.handleToggleDirection();
         return;
       }
 
       // Backspace - clear current cell and move to previous
       if (e.key === 'Backspace') {
         e.preventDefault();
-        const cellKey = `${row},${col}`;
-        const currentValue = userGrid.get(cellKey) || '';
-
-        if (currentValue) {
-          // Clear current cell
-          dispatch({
-            type: 'SET_CELL_VALUE',
-            payload: { row, col, value: '' },
-          });
-        } else {
-          // Move to previous cell
-          const result = getPreviousCellInWordOrPreviousWord(grid, row, col, direction, clueMap);
-          if (result) {
-            dispatch({
-              type: 'SET_SELECTION',
-              payload: {
-                row: result.row,
-                col: result.col,
-                direction: result.direction,
-                clueNumber: grid[result.row][result.col].number,
-              },
-            });
-
-            // Clear the previous cell
-            dispatch({
-              type: 'SET_CELL_VALUE',
-              payload: { row: result.row, col: result.col, value: '' },
-            });
-
-            // Update highlighted cells
-            const clueKey = getClueKeyForCell(grid, result.row, result.col, result.direction, clueMap);
-            if (clueKey) {
-              const cells = getCellsForClue(clueKey, clueMap);
-              const highlighted = new Set(cells.map(c => `${c.row},${c.col}`));
-              dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
-            }
-          }
-        }
+        actions.handleBackspace();
         return;
       }
 
@@ -166,23 +104,7 @@ export function useKeyboard() {
       // Enter - move to next clue
       if (e.key === 'Enter') {
         e.preventDefault();
-        const result = getNextWord(grid, row, col, direction, clueMap);
-        if (result) {
-          const clueKey = getClueKeyForCell(grid, result.row, result.col, result.direction, clueMap);
-          let targetRow = result.row;
-          let targetCol = result.col;
-          if (clueKey) {
-            const cells = getCellsForClue(clueKey, clueMap);
-            const highlighted = new Set(cells.map(c => `${c.row},${c.col}`));
-            dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
-            const emptyCell = cells.find(c => !userGrid.get(`${c.row},${c.col}`));
-            if (emptyCell) { targetRow = emptyCell.row; targetCol = emptyCell.col; }
-          }
-          dispatch({
-            type: 'SET_SELECTION',
-            payload: { row: targetRow, col: targetCol, direction: result.direction, clueNumber: grid[targetRow][targetCol].number },
-          });
-        }
+        actions.handleNextWord();
         return;
       }
 
@@ -240,55 +162,12 @@ export function useKeyboard() {
       // Letter input - fill cell and advance
       if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
         e.preventDefault();
-        const letter = e.key.toUpperCase();
-
-        // Set cell value
-        dispatch({
-          type: 'SET_CELL_VALUE',
-          payload: { row, col, value: letter },
-        });
-
-        // Auto-advance to next empty cell
-        let advanceResult: { row: number; col: number; direction: 'across' | 'down' } | null = null;
-        const wordClueKey = getClueKeyForCell(grid, row, col, direction, clueMap);
-        if (wordClueKey) {
-          const wordCells = getCellsForClue(wordClueKey, clueMap);
-          const currentIdx = wordCells.findIndex(c => c.row === row && c.col === col);
-          const nextEmpty = wordCells.slice(currentIdx + 1).find(c => !userGrid.get(`${c.row},${c.col}`));
-          if (nextEmpty) {
-            advanceResult = { ...nextEmpty, direction };
-          } else {
-            // All remaining cells in word are filled — go to next word's first empty cell
-            const nextWord = getNextWord(grid, row, col, direction, clueMap);
-            if (nextWord) {
-              const nextClueKey = getClueKeyForCell(grid, nextWord.row, nextWord.col, nextWord.direction, clueMap);
-              if (nextClueKey) {
-                const nextWordCells = getCellsForClue(nextClueKey, clueMap);
-                const emptyInNext = nextWordCells.find(c => !userGrid.get(`${c.row},${c.col}`));
-                advanceResult = emptyInNext
-                  ? { ...emptyInNext, direction: nextWord.direction }
-                  : { row: nextWord.row, col: nextWord.col, direction: nextWord.direction };
-              }
-            }
-          }
-        }
-        if (advanceResult) {
-          dispatch({
-            type: 'SET_SELECTION',
-            payload: { row: advanceResult.row, col: advanceResult.col, direction: advanceResult.direction, clueNumber: grid[advanceResult.row][advanceResult.col].number },
-          });
-          const clueKey = getClueKeyForCell(grid, advanceResult.row, advanceResult.col, advanceResult.direction, clueMap);
-          if (clueKey) {
-            const cells = getCellsForClue(clueKey, clueMap);
-            const highlighted = new Set(cells.map(c => `${c.row},${c.col}`));
-            dispatch({ type: 'SET_HIGHLIGHTED_CELLS', payload: highlighted });
-          }
-        }
+        actions.handleLetter(e.key);
         return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [grid, clueMap, selection, userGrid, dispatch]);
+  }, [grid, clueMap, selection, dispatch, actions]);
 }

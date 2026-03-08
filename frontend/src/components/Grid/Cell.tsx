@@ -11,6 +11,7 @@ interface CellProps {
   isIncorrect: boolean;
   isCorrect: boolean;
   isPencil: boolean;
+  isReadOnly?: boolean;
   remoteCursors?: RoomPresence[];
   remoteHighlightColor?: string;
   remoteSelectedColor?: string;
@@ -30,6 +31,7 @@ const Cell: React.FC<CellProps> = ({
   isIncorrect,
   isCorrect,
   isPencil,
+  isReadOnly = false,
   remoteCursors = [],
   remoteHighlightColor,
   remoteSelectedColor,
@@ -45,7 +47,7 @@ const Cell: React.FC<CellProps> = ({
   // Auto-focus when selected
   useEffect(() => {
     if (isSelected && inputRef.current) {
-      inputRef.current.focus();
+      inputRef.current.focus({ preventScroll: true });
     }
   }, [isSelected]);
 
@@ -114,7 +116,8 @@ const Cell: React.FC<CellProps> = ({
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck="false"
-        inputMode="text"
+        readOnly={isReadOnly}
+        inputMode={isReadOnly ? 'none' : 'text'}
         aria-label={cell.number ? `Cell ${cell.number}` : 'Cell'}
         aria-invalid={isIncorrect}
         style={myCursorColor ? { outlineColor: myCursorColor } : undefined}

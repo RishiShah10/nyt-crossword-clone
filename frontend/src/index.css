@@ -31,7 +31,7 @@ body {
   background-color: #ffffff;
 }
 
-/* Allow scrolling on mobile/tablet */
+/* Allow scrolling on tablet */
 @media (max-width: 1024px) {
   body {
     height: auto;
@@ -43,6 +43,14 @@ body {
     height: auto;
     min-height: 100vh;
     overflow: auto;
+  }
+}
+
+/* On narrow mobile, restore fixed layout so keyboard stays pinned */
+@media (max-width: 767px) {
+  body, #root {
+    height: 100vh;
+    overflow: hidden;
   }
 }
 

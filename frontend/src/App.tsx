@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { usePuzzle } from './context/PuzzleContext';
 import { useAuth } from './context/AuthContext';
 import { useRoom } from './context/RoomContext';
+import { useIsMobile } from './hooks/useIsMobile';
+import MobileKeyboard from './components/MobileKeyboard/MobileKeyboard';
 import { puzzleApi } from './api/client';
 import Grid from './components/Grid/Grid';
 import ClueList from './components/Clues/ClueList';
@@ -25,6 +27,8 @@ function App() {
   const { isAuthenticated, isNewUser, clearNewUserFlag } = useAuth();
   const { room, myMember, presenceList, isInRoom, leaveRoom, changeColor } = useRoom();
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showClueOverlay, setShowClueOverlay] = useState(false);
+  const isMobile = useIsMobile();
 
   // Cleanup old saves on mount
   useEffect(() => {
@@ -207,8 +211,24 @@ function App() {
 
       <main className="app-main">
         <Grid />
-        <ClueList />
+        {!isMobile && <ClueList />}
       </main>
+
+      {isMobile && (
+        <MobileKeyboard onOpenClues={() => setShowClueOverlay(true)} />
+      )}
+
+      {isMobile && showClueOverlay && (
+        <div className="clue-overlay">
+          <div className="clue-overlay-header">
+            <h2 style={{ margin: 0 }}>Clues</h2>
+            <button className="clue-overlay-close" onClick={() => setShowClueOverlay(false)}>Done</button>
+          </div>
+          <div className="clue-overlay-body">
+            <ClueList onClueClick={() => setShowClueOverlay(false)} />
+          </div>
+        </div>
+      )}
 
       <Confetti show={state.isComplete} />
 

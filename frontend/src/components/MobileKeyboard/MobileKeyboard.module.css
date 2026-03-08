@@ -1,0 +1,70 @@
+.keyboard {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #d1d5db;
+  padding: 8px 4px env(safe-area-inset-bottom);
+  border-top: 1px solid #b0b5bc;
+  z-index: 100;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.keyRow {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.key {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 42px;
+  background: #fff;
+  border-radius: 5px;
+  border: none;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  cursor: pointer;
+  color: #000;
+  font-family: inherit;
+}
+
+.keyAction {
+  background: #aab0b8;
+  font-size: 13px;
+  width: 42px;
+}
+
+.actionRow {
+  display: flex;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.actionRowBtn {
+  flex: 1;
+  height: 38px;
+  font-size: 12px;
+  font-weight: 600;
+  touch-action: manipulation;
+  background: #aab0b8;
+  border: none;
+  border-radius: 5px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  color: #000;
+  font-family: inherit;
+}
+
+.pencilActive {
+  background: #555;
+  color: #fff;
+}
