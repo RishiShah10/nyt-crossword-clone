@@ -1,6 +1,6 @@
 # NYT Crossword Clone
 
-A fully functional crossword puzzle application that replicates the New York Times crossword interface. Built with FastAPI backend and React + TypeScript frontend.
+A fully functional crossword puzzle application that replicates the New York Times crossword interface. Built with FastAPI backend and React + TypeScript frontend. Supports real-time collaborative solving via Ably.
 
 ## Features
 
