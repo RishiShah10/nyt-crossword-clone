@@ -82,6 +82,21 @@
   font-weight: 400;
 }
 
+.puzzle-meta .made-by {
+  font-size: 0.75rem;
+  color: #999;
+  margin-left: auto;
+}
+
+.puzzle-meta .made-by a {
+  color: #2196f3;
+  text-decoration: none;
+}
+
+.puzzle-meta .made-by a:hover {
+  text-decoration: underline;
+}
+
 /* Auth Section */
 .auth-section {
   margin-left: auto;

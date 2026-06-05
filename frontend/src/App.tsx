@@ -159,6 +159,12 @@ function App() {
         </div>
         <div className="puzzle-meta">
           {puzzle?.author && <span className="author">By {puzzle.author}</span>}
+          <span className="made-by">
+            Made by{' '}
+            <a href="https://www.linkedin.com/in/rishi-shah-10/" target="_blank" rel="noopener noreferrer">
+              Rishi Shah
+            </a>
+          </span>
         </div>
         <Timer />
         <div className="auth-section">
