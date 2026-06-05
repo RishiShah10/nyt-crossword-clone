@@ -37,31 +37,6 @@ export const puzzleApi = {
     return response.data;
   },
 
-  async getRandomMiniPuzzle(): Promise<PuzzleResponse> {
-    const response = await apiClient.get<PuzzleResponse>('/api/puzzles/random/mini');
-    return response.data;
-  },
-
-  async getTodayHistorical(): Promise<PuzzleResponse> {
-    const response = await apiClient.get<PuzzleResponse>('/api/puzzles/today/historical');
-    return response.data;
-  },
-
-  async getTodaysLivePuzzle(): Promise<PuzzleResponse> {
-    const response = await apiClient.get<PuzzleResponse>('/api/puzzles/today/live');
-    return response.data;
-  },
-
-  async getTodaysMiniPuzzle(): Promise<PuzzleResponse> {
-    const response = await apiClient.get<PuzzleResponse>('/api/puzzles/today/mini');
-    return response.data;
-  },
-
-  async getMiniPuzzleByDate(date: string): Promise<PuzzleResponse> {
-    const response = await apiClient.get<PuzzleResponse>(`/api/puzzles/mini/${date}`);
-    return response.data;
-  },
-
   async generatePuzzle(topics: string, title: string): Promise<PuzzleResponse> {
     const response = await apiClient.post<PuzzleResponse>('/api/puzzles/generate', {
       topics,

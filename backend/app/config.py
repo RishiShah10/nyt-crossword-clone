@@ -45,8 +45,6 @@ class Settings:
     # OpenAI
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 
-    # NYT Live Puzzles (optional — enables fetching 2019+ puzzles)
-    NYT_COOKIE: str = os.getenv("NYT_COOKIE", "")
 
     def validate(self) -> None:
         """Validate critical settings at startup. Raises on misconfiguration."""

@@ -31,20 +31,12 @@ async def lifespan(app: FastAPI):
     elif settings.DATABASE_URL:
         logger.info("Skipping init_db in serverless environment (expect tables to be pre-created)")
 
-    # Optional: create NytService for lifespan-managed cleanup
-    from .services.nyt_service import NytService
-    nyt_service = NytService(settings.NYT_COOKIE) if settings.NYT_COOKIE else None
-
-    if nyt_service:
-        logger.info("NYT live puzzle service enabled (2019-present)")
-
     # Pre-fetch puzzles only when running as a long-lived server (not serverless)
     if not IS_SERVERLESS:
         cache_service = CacheService(cache_dir=settings.CACHE_DIR)
         puzzle_service = PuzzleService(
             cache_service=cache_service,
             github_base_url=settings.GITHUB_REPO_URL,
-            nyt_service=nyt_service,
         )
 
         try:
@@ -57,9 +49,6 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Shutting down...")
-    # Clean up NytService httpx client
-    if nyt_service:
-        await nyt_service.close()
 
 
 # Create FastAPI app — disable docs/openapi in production

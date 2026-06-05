@@ -2,20 +2,15 @@ import httpx
 import logging
 import random
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 from ..models.puzzle import Puzzle
 from .cache_service import CacheService
 
-if TYPE_CHECKING:
-    from .nyt_service import NytService
-
 logger = logging.getLogger(__name__)
 
-# Boundary date: 2019-01-01+ uses NYT API, before uses GitHub archive
-NYT_CUTOVER = datetime(2019, 1, 1)
-
-PACIFIC = ZoneInfo("America/Los_Angeles")
+# Archive date range: doshea/nyt_crosswords GitHub archive
+ARCHIVE_MIN = datetime(1977, 1, 1)
+ARCHIVE_MAX = datetime(2018, 12, 31)
 
 
 class PuzzleService:
@@ -25,20 +20,13 @@ class PuzzleService:
         self,
         cache_service: CacheService,
         github_base_url: str = "https://raw.githubusercontent.com/doshea/nyt_crosswords/master",
-        nyt_service: Optional["NytService"] = None,
     ):
         self.cache_service = cache_service
         self.github_base_url = github_base_url.rstrip('/')
         self.http_client = httpx.AsyncClient(timeout=30.0)
-        self.nyt_service = nyt_service
 
-        # Date range for available puzzles
-        self.min_date = datetime(2010, 1, 1)
-        # Extend max_date to today if NYT service is available
-        if self.nyt_service:
-            self.max_date = datetime.now(PACIFIC).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-        else:
-            self.max_date = datetime(2018, 12, 31)
+        self.min_date = ARCHIVE_MIN
+        self.max_date = ARCHIVE_MAX
 
     async def close(self):
         """Close HTTP client."""
@@ -89,46 +77,28 @@ class PuzzleService:
             print(f"Unexpected error fetching puzzle for {date}: {e}")
             return None
 
-    async def get_puzzle(self, date: str, puzzle_type: str = "daily") -> Optional[Puzzle]:
-        """Get puzzle for a specific date.
+    async def get_puzzle(self, date: str) -> Optional[Puzzle]:
+        """Get puzzle for a specific date from the GitHub archive.
 
         Args:
-            date: Date string in YYYY-MM-DD format
-            puzzle_type: "daily" or "mini"
+            date: Date string in YYYY-MM-DD format (1977-01-01 to 2018-12-31)
 
         Returns:
             Puzzle model if found, None otherwise
-
-        Raises:
-            NytAuthError: Re-raised if NYT cookie is invalid.
         """
-        # Validate date format
         try:
             date_obj = datetime.strptime(date, "%Y-%m-%d")
             if not (self.min_date <= date_obj <= self.max_date):
-                logger.info("Date %s is outside available range", date)
+                logger.info("Date %s is outside available range (1977–2018)", date)
                 return None
         except ValueError:
             logger.info("Invalid date format: %s", date)
             return None
 
-        # Mini puzzles always come from NYT API (no GitHub archive)
-        if puzzle_type == "mini":
-            if not self.nyt_service:
-                return None
-            puzzle_data = await self._fetch_from_nyt(date, puzzle_type="mini")
-        else:
-            # Try cache first
-            puzzle_data = self.cache_service.get(date)
+        puzzle_data = self.cache_service.get(date)
+        if puzzle_data is None:
+            puzzle_data = await self._fetch_from_github(date)
 
-            # Fetch from source if not cached
-            if puzzle_data is None:
-                if date_obj >= NYT_CUTOVER and self.nyt_service:
-                    puzzle_data = await self._fetch_from_nyt(date)
-                else:
-                    puzzle_data = await self._fetch_from_github(date)
-
-        # Parse and return puzzle
         if puzzle_data:
             try:
                 puzzle = Puzzle(**puzzle_data)
@@ -142,52 +112,10 @@ class PuzzleService:
 
         return None
 
-    async def _fetch_from_nyt(self, date: str, puzzle_type: str = "daily") -> Optional[dict]:
-        """Fetch puzzle from the NYT v6 API.
-
-        Raises:
-            NytAuthError: Re-raised so the API layer can return 403.
-        """
-        from .nyt_service import NytAuthError, NytApiError
-
-        try:
-            puzzle_data = await self.nyt_service.fetch_puzzle(date, puzzle_type=puzzle_type)
-            if puzzle_data and puzzle_type == "daily":
-                self.cache_service.set(date, puzzle_data)
-            return puzzle_data
-        except NytAuthError:
-            raise
-        except NytApiError as e:
-            logger.error("NYT API error for %s: %s", date, e)
-            return None
-
-    async def get_todays_puzzle(self) -> Optional[Puzzle]:
-        """Get today's live NYT puzzle.
-
-        Raises:
-            NytAuthError: Re-raised if cookie is invalid.
-        """
-        today = datetime.now(PACIFIC).strftime("%Y-%m-%d")
-        return await self.get_puzzle(today)
-
-    async def get_todays_mini(self) -> Optional[Puzzle]:
-        """Get today's mini NYT puzzle.
-
-        Raises:
-            NytAuthError: Re-raised if cookie is invalid.
-        """
-        today = datetime.now(PACIFIC).strftime("%Y-%m-%d")
-        return await self.get_puzzle(today, puzzle_type="mini")
-
     async def get_random_puzzle(self) -> Optional[Puzzle]:
-        """Get a random puzzle from the available date range.
-
-        Returns:
-            Random puzzle model if successful, None otherwise
-        """
+        """Get a random puzzle from the archive (1977–2018)."""
         time_delta = self.max_date - self.min_date
 
-        # Try up to 10 random dates in case some don't have puzzles
         for _ in range(10):
             random_days = random.randint(0, time_delta.days)
             random_date = self.min_date + timedelta(days=random_days)
@@ -199,52 +127,26 @@ class PuzzleService:
 
         return None
 
-    async def get_random_mini(self) -> Optional[Puzzle]:
-        """Get a random mini puzzle from the last 2 years.
+    async def get_today_historical_puzzle(self) -> Optional[Puzzle]:
+        """Get a historical puzzle matching today's month/day from a random archive year."""
+        today = datetime.now()
+        month = today.month
+        day = today.day
 
-        Returns:
-            Random mini puzzle if successful, None otherwise
+        available_years = list(range(1977, 2019))
+        random.shuffle(available_years)
 
-        Raises:
-            NytAuthError: Re-raised if cookie is invalid.
-        """
-        today = datetime.now(PACIFIC).replace(tzinfo=None)
-        min_mini_date = today - timedelta(days=730)
-
-        for _ in range(10):
-            random_days = random.randint(0, (today - min_mini_date).days)
-            random_date = min_mini_date + timedelta(days=random_days)
-            date_str = random_date.strftime("%Y-%m-%d")
-
-            puzzle = await self.get_puzzle(date_str, puzzle_type="mini")
+        for year in available_years:
+            date_str = f"{year}-{month:02d}-{day:02d}"
+            puzzle = await self.get_puzzle(date_str)
             if puzzle:
                 return puzzle
 
         return None
 
-    async def get_today_historical_puzzle(self) -> Optional[Puzzle]:
-        """Get today's historical puzzle (same month/day from a past year).
-
-        Returns:
-            Historical puzzle for today's date from a random past year
-        """
-        today = datetime.now(PACIFIC)
-        month = today.month
-        day = today.day
-
-        # Pick a random year from the available range
-        available_years = list(range(2010, 2019))
-        random_year = random.choice(available_years)
-
-        # Construct date string
-        date_str = f"{random_year}-{month:02d}-{day:02d}"
-
-        return await self.get_puzzle(date_str)
-
     async def prefetch_recent_puzzles(self, days: int = 7):
-        """Pre-fetch and cache recent puzzles from the GitHub archive for faster access."""
-        # Always prefetch from the GitHub archive (fast, no auth needed)
-        base_date = datetime(2018, 12, 31)
+        """Pre-fetch and cache recent archive puzzles for faster access."""
+        base_date = ARCHIVE_MAX
         print(f"Pre-fetching last {days} puzzles from GitHub archive...")
 
         for i in range(days):

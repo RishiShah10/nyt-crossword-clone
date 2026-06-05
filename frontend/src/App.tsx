@@ -68,41 +68,15 @@ function App() {
   }, [isNewUser, isAuthenticated, clearNewUserFlag]);
 
   useEffect(() => {
-    // Load today's live puzzle on mount, fall back to historical or random archive puzzle
     const loadPuzzle = async () => {
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
-        let response;
-        
-        console.log('Attempting to load today\'s live puzzle...');
-        try {
-          response = await puzzleApi.getTodaysLivePuzzle();
-          console.log('Successfully loaded live puzzle');
-        } catch (liveError: any) {
-          console.warn('Failed to load live puzzle (possibly NYT_COOKIE not set):', liveError.response?.data?.detail || liveError.message);
-          
-          console.log('Attempting to load today\'s historical puzzle...');
-          try {
-            response = await puzzleApi.getTodayHistorical();
-            console.log('Successfully loaded historical puzzle');
-          } catch (histError: any) {
-            console.warn('Failed to load historical puzzle:', histError.response?.data?.detail || histError.message);
-            
-            console.log('Falling back to random archive puzzle...');
-            response = await puzzleApi.getRandomPuzzle();
-            console.log('Successfully loaded random puzzle');
-          }
-        }
-
+        const response = await puzzleApi.getRandomPuzzle();
         dispatch({
           type: 'SET_PUZZLE',
-          payload: {
-            puzzle: response.puzzle,
-            puzzleId: response.puzzle_id,
-          },
+          payload: { puzzle: response.puzzle, puzzleId: response.puzzle_id },
         });
       } catch (error: any) {
-        console.error('Final error loading puzzle:', error);
         dispatch({
           type: 'SET_ERROR',
           payload: `Failed to load puzzle: ${error.response?.data?.detail || error.message}. Please try again.`,
@@ -237,6 +211,14 @@ function App() {
         onClose={() => setShowLibrary(false)}
         onSelectPuzzle={handleSelectPuzzle}
       />
+
+      <footer className="app-footer">
+        <strong>Hey! Just to be clear:</strong> I don't own any of these puzzles — all NYT crosswords are © The New York Times Company.
+        Puzzles are sourced from the open-source{' '}
+        <a href="https://github.com/doshea/nyt_crosswords" target="_blank" rel="noopener noreferrer">doshea/nyt_crosswords</a>{' '}
+        archive (1977–2018). This is just a fun, unofficial UI I built so friends can solve crosswords together in real time.
+        No affiliation with or endorsement by The New York Times. Not for commercial use.
+      </footer>
     </div>
   );
 }

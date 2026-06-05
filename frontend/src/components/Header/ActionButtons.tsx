@@ -437,10 +437,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onOpenLibrary }) => {
         <button
           className="btn btn-ai"
           onClick={() => setShowGenerateModal(true)}
-          title="Generate a custom mini crossword with AI"
-          aria-label="Generate AI puzzle"
+          title="Generate a custom mini crossword with AI (work in progress)"
+          aria-label="Generate AI puzzle (work in progress)"
         >
-          ✨ AI Mini
+          ✨ AI Mini [WIP]
         </button>
       </div>
 

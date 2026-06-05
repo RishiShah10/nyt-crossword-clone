@@ -49,13 +49,14 @@ const GeneratePuzzleModal: React.FC<GeneratePuzzleModalProps> = ({ isOpen, onClo
   return (
     <Modal
       isOpen={isOpen}
-      title="Generate AI Mini Crossword"
+      title="Generate AI Mini Crossword [WIP]"
       onClose={onClose}
       variant="info"
     >
       <form className={styles.form} onSubmit={handleSubmit}>
         <p className={styles.description}>
-          Enter some topics and a title to create a custom 5x5 mini crossword puzzle using AI.
+          Enter some topics and a title to create a custom 5×5 mini crossword puzzle using AI.
+          This feature is a work in progress — quality may vary.
         </p>
         
         <div className={styles.field}>

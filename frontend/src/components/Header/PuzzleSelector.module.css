@@ -100,38 +100,6 @@
   cursor: not-allowed;
 }
 
-/* Daily/Mini Toggle */
-.toggleWrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px;
-  background: white;
-  border-radius: 3px;
-  border: 1px solid #e0e0e0;
-}
-
-.toggleLabel {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
-  color: #888;
-  background: transparent;
-}
-
-.toggleLabel.active {
-  color: white;
-  background: #2196f3;
-}
-
-.toggleDisabled {
-  opacity: 0.6;
-  pointer-events: none;
-}
 
 /* Responsive - Tablet */
 @media (max-width: 899px) {
